@@ -4,13 +4,13 @@
 
 这是我目前的计划，所有课程均会使用Jupyter Notebook来书写，提供.py和.ipynb两种格式供大家下载，这是我目前的写作计划
 
- - 01. 有关pandas的基础知识
- - 02. 数据清洗和过滤
- - 03. pandas的常见操作,sort,merge,join,concat等
- - 04. pandas不为人知的小技巧
- - 05. pandas处理大数据
- - 06. pandas加速
- - 07. 分享一个小模型：检验数据一致性
+  1. 有关pandas的基础知识
+  2. 数据清洗和过滤
+  3. pandas的常见操作,sort,merge,join,concat等
+  4. pandas不为人知的小技巧
+  5. pandas处理大数据
+  6. pandas加速
+  7. 分享一个小模型：检验数据一致性
 
 如果大家对其他领域感兴趣，欢迎关注我的其他项目：
  - [Alpha欧美针剂科普平台](http://www.yaozeliang.com/platform/)，正在开发中，是为了帮助各位小仙女更好的了解欧美微整针剂。
