@@ -1,0 +1,1094 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pandas之旅（一）让我们一次性把基础知识说完</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__left">
+    <div class="stackedit__toc">
+      
+<ul>
+<li>
+<ul>
+<li><a href="#创建空dataframe">创建空Dataframe</a></li>
+<li><a href="#从dict创建dataframe1">从Dict创建Dataframe(1)</a></li>
+<li><a href="#从dict创建dataframe2">从Dict创建Dataframe(2)</a></li>
+<li><a href="#对columns的基础操作">对columns的基础操作</a></li>
+<li><a href="#对rows的基础操作">对rows的基础操作</a></li>
+<li><a href="#读取，写出csv">读取，写出CSV</a></li>
+</ul>
+</li>
+</ul>
+
+    </div>
+  </div>
+  <div class="stackedit__right">
+    <div class="stackedit__html">
+      <pre class=" language-python"><code class="prism  language-python"><span class="token comment"># import numpy as np</span>
+<span class="token keyword">import</span> pandas <span class="token keyword">as</span> pd
+<span class="token keyword">print</span> <span class="token punctuation">(</span>f<span class="token string">" Using {pd.__name__},Version {pd.__version__}"</span><span class="token punctuation">)</span>
+</code></pre>
+<pre><code> Using pandas,Version 0.23.0
+</code></pre>
+<h2 id="创建空dataframe">创建空Dataframe</h2>
+<pre class=" language-python"><code class="prism  language-python">df <span class="token operator">=</span> pd<span class="token punctuation">.</span>DataFrame<span class="token punctuation">(</span><span class="token punctuation">)</span> 
+<span class="token keyword">print</span><span class="token punctuation">(</span>df<span class="token punctuation">)</span>
+</code></pre>
+<pre><code>Empty DataFrame
+Columns: []
+Index: []
+</code></pre>
+<h2 id="从dict创建dataframe1">从Dict创建Dataframe(1)</h2>
+<pre class=" language-python"><code class="prism  language-python"><span class="token builtin">dict</span> <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token string">'name'</span><span class="token punctuation">:</span><span class="token punctuation">[</span><span class="token string">"Tom"</span><span class="token punctuation">,</span> <span class="token string">"Bob"</span><span class="token punctuation">,</span> <span class="token string">"Mary"</span><span class="token punctuation">,</span> <span class="token string">"James"</span><span class="token punctuation">]</span><span class="token punctuation">,</span> 
+        <span class="token string">'age'</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token number">18</span><span class="token punctuation">,</span> <span class="token number">30</span><span class="token punctuation">,</span> <span class="token number">25</span><span class="token punctuation">,</span> <span class="token number">40</span><span class="token punctuation">]</span><span class="token punctuation">,</span> 
+        <span class="token string">'city'</span><span class="token punctuation">:</span><span class="token punctuation">[</span><span class="token string">"Beijing"</span><span class="token punctuation">,</span> <span class="token string">"ShangHai"</span><span class="token punctuation">,</span><span class="token string">"GuangZhou"</span><span class="token punctuation">,</span> <span class="token string">"ShenZhen"</span><span class="token punctuation">]</span><span class="token punctuation">}</span> 
+  
+df <span class="token operator">=</span> pd<span class="token punctuation">.</span>DataFrame<span class="token punctuation">(</span><span class="token builtin">dict</span><span class="token punctuation">)</span> 
+df
+</code></pre>
+<div>
+</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>name</th>
+      <th>age</th>
+      <th>city</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Tom</td>
+      <td>18</td>
+      <td>Beijing</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Bob</td>
+      <td>30</td>
+      <td>ShangHai</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Mary</td>
+      <td>25</td>
+      <td>GuangZhou</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>James</td>
+      <td>40</td>
+      <td>ShenZhen</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="从dict创建dataframe2">从Dict创建Dataframe(2)</h2>
+<pre class=" language-python"><code class="prism  language-python">index <span class="token operator">=</span> pd<span class="token punctuation">.</span>Index<span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token string">"Tom"</span><span class="token punctuation">,</span> <span class="token string">"Bob"</span><span class="token punctuation">,</span> <span class="token string">"Mary"</span><span class="token punctuation">,</span> <span class="token string">"James"</span><span class="token punctuation">]</span><span class="token punctuation">,</span>name <span class="token operator">=</span> <span class="token string">'person'</span><span class="token punctuation">)</span>
+cols <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token string">'age'</span><span class="token punctuation">,</span><span class="token string">'city'</span><span class="token punctuation">]</span>
+data <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">[</span><span class="token number">18</span><span class="token punctuation">,</span><span class="token string">'Beijing'</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+        <span class="token punctuation">[</span><span class="token number">30</span><span class="token punctuation">,</span><span class="token string">'ShangHai'</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+        <span class="token punctuation">[</span><span class="token number">25</span><span class="token punctuation">,</span><span class="token string">'GuangZhou'</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+        <span class="token punctuation">[</span><span class="token number">40</span><span class="token punctuation">,</span><span class="token string">'ShenZhen'</span><span class="token punctuation">]</span><span class="token punctuation">]</span>
+
+df <span class="token operator">=</span>pd<span class="token punctuation">.</span>DataFrame<span class="token punctuation">(</span>index <span class="token operator">=</span> index<span class="token punctuation">,</span>data <span class="token operator">=</span>data<span class="token punctuation">,</span>columns <span class="token operator">=</span> cols<span class="token punctuation">)</span>
+df
+</code></pre>
+<div>
+</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>age</th>
+      <th>city</th>
+    </tr>
+    <tr>
+      <th>person</th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Tom</th>
+      <td>18</td>
+      <td>Beijing</td>
+    </tr>
+    <tr>
+      <th>Bob</th>
+      <td>30</td>
+      <td>ShangHai</td>
+    </tr>
+    <tr>
+      <th>Mary</th>
+      <td>25</td>
+      <td>GuangZhou</td>
+    </tr>
+    <tr>
+      <th>James</th>
+      <td>40</td>
+      <td>ShenZhen</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="对columns的基础操作">对columns的基础操作</h2>
+<h3 id="add-column">add column</h3>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># 还用刚刚的dataframe</span>
+<span class="token builtin">dict</span> <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token string">'name'</span><span class="token punctuation">:</span><span class="token punctuation">[</span><span class="token string">"Tom"</span><span class="token punctuation">,</span> <span class="token string">"Bob"</span><span class="token punctuation">,</span> <span class="token string">"Mary"</span><span class="token punctuation">,</span> <span class="token string">"James"</span><span class="token punctuation">]</span><span class="token punctuation">,</span> 
+        <span class="token string">'age'</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token number">18</span><span class="token punctuation">,</span> <span class="token number">30</span><span class="token punctuation">,</span> <span class="token number">25</span><span class="token punctuation">,</span> <span class="token number">40</span><span class="token punctuation">]</span><span class="token punctuation">,</span> 
+        <span class="token string">'city'</span><span class="token punctuation">:</span><span class="token punctuation">[</span><span class="token string">"Beijing"</span><span class="token punctuation">,</span> <span class="token string">"ShangHai"</span><span class="token punctuation">,</span><span class="token string">"GuangZhou"</span><span class="token punctuation">,</span> <span class="token string">"ShenZhen"</span><span class="token punctuation">]</span><span class="token punctuation">}</span> 
+  
+df <span class="token operator">=</span> pd<span class="token punctuation">.</span>DataFrame<span class="token punctuation">(</span><span class="token builtin">dict</span><span class="token punctuation">)</span> 
+df
+</code></pre>
+<div>
+</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>name</th>
+      <th>age</th>
+      <th>city</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Tom</td>
+      <td>18</td>
+      <td>Beijing</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Bob</td>
+      <td>30</td>
+      <td>ShangHai</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Mary</td>
+      <td>25</td>
+      <td>GuangZhou</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>James</td>
+      <td>40</td>
+      <td>ShenZhen</td>
+    </tr>
+  </tbody>
+</table>
+
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">[</span><span class="token string">'country'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">'USA'</span>
+df
+</code></pre>
+<div>
+</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>name</th>
+      <th>age</th>
+      <th>city</th>
+      <th>country</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Tom</td>
+      <td>18</td>
+      <td>Beijing</td>
+      <td>USA</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Bob</td>
+      <td>30</td>
+      <td>ShangHai</td>
+      <td>USA</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Mary</td>
+      <td>25</td>
+      <td>GuangZhou</td>
+      <td>USA</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>James</td>
+      <td>40</td>
+      <td>ShenZhen</td>
+      <td>USA</td>
+    </tr>
+  </tbody>
+</table>
+
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">[</span><span class="token string">'adress'</span><span class="token punctuation">]</span> <span class="token operator">=</span> df<span class="token punctuation">[</span><span class="token string">'country'</span><span class="token punctuation">]</span>
+df
+</code></pre>
+<div>
+</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>name</th>
+      <th>age</th>
+      <th>city</th>
+      <th>country</th>
+      <th>adress</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Tom</td>
+      <td>18</td>
+      <td>Beijing</td>
+      <td>USA</td>
+      <td>USA</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Bob</td>
+      <td>30</td>
+      <td>ShangHai</td>
+      <td>USA</td>
+      <td>USA</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Mary</td>
+      <td>25</td>
+      <td>GuangZhou</td>
+      <td>USA</td>
+      <td>USA</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>James</td>
+      <td>40</td>
+      <td>ShenZhen</td>
+      <td>USA</td>
+      <td>USA</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="change-column-values">Change column values</h3>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">[</span><span class="token string">'country'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">'China'</span>
+df
+</code></pre>
+<div>
+</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>name</th>
+      <th>age</th>
+      <th>city</th>
+      <th>country</th>
+      <th>adress</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Tom</td>
+      <td>18</td>
+      <td>Beijing</td>
+      <td>China</td>
+      <td>USA</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Bob</td>
+      <td>30</td>
+      <td>ShangHai</td>
+      <td>China</td>
+      <td>USA</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Mary</td>
+      <td>25</td>
+      <td>GuangZhou</td>
+      <td>China</td>
+      <td>USA</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>James</td>
+      <td>40</td>
+      <td>ShenZhen</td>
+      <td>China</td>
+      <td>USA</td>
+    </tr>
+  </tbody>
+</table>
+
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">[</span><span class="token string">'adress'</span><span class="token punctuation">]</span> <span class="token operator">=</span> df<span class="token punctuation">[</span><span class="token string">'city'</span><span class="token punctuation">]</span><span class="token operator">+</span><span class="token string">','</span><span class="token operator">+</span> df<span class="token punctuation">[</span><span class="token string">'country'</span><span class="token punctuation">]</span>
+df
+</code></pre>
+<div>
+</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>name</th>
+      <th>age</th>
+      <th>city</th>
+      <th>country</th>
+      <th>adress</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Tom</td>
+      <td>18</td>
+      <td>Beijing</td>
+      <td>China</td>
+      <td>Beijing,China</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Bob</td>
+      <td>30</td>
+      <td>ShangHai</td>
+      <td>China</td>
+      <td>ShangHai,China</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Mary</td>
+      <td>25</td>
+      <td>GuangZhou</td>
+      <td>China</td>
+      <td>GuangZhou,China</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>James</td>
+      <td>40</td>
+      <td>ShenZhen</td>
+      <td>China</td>
+      <td>ShenZhen,China</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="delete-columns">Delete columns</h3>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">.</span>drop<span class="token punctuation">(</span><span class="token string">'country'</span><span class="token punctuation">,</span>axis<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">,</span> inplace<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>
+<span class="token keyword">del</span> df<span class="token punctuation">[</span><span class="token string">'city'</span><span class="token punctuation">]</span>
+df
+</code></pre>
+<div>
+</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>name</th>
+      <th>age</th>
+      <th>adress</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Tom</td>
+      <td>18</td>
+      <td>Beijing,China</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Bob</td>
+      <td>30</td>
+      <td>ShangHai,China</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Mary</td>
+      <td>25</td>
+      <td>GuangZhou,China</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>James</td>
+      <td>40</td>
+      <td>ShenZhen,China</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="select-columns">Select columns</h3>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">[</span><span class="token string">'age'</span><span class="token punctuation">]</span>
+
+</code></pre>
+<pre><code>0    18
+1    30
+2    25
+3    40
+Name: age, dtype: int64
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">.</span>name
+</code></pre>
+<pre><code>0      Tom
+1      Bob
+2     Mary
+3    James
+Name: name, dtype: object
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">[</span><span class="token punctuation">[</span><span class="token string">'age'</span><span class="token punctuation">,</span><span class="token string">'name'</span><span class="token punctuation">]</span><span class="token punctuation">]</span>  <span class="token comment"># This is a dataframe, Not a Serie</span>
+
+</code></pre>
+<div>
+</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>age</th>
+      <th>name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>18</td>
+      <td>Tom</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>30</td>
+      <td>Bob</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>25</td>
+      <td>Mary</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>40</td>
+      <td>James</td>
+    </tr>
+  </tbody>
+</table>
+
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">.</span>columns
+</code></pre>
+<pre><code>Index(['name', 'age', 'adress'], dtype='object')
+</code></pre>
+<h3 id="rename-columns">Rename columns</h3>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># df.columns = ['Age','Name','Adress']</span>
+<span class="token comment"># df</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">.</span>rename<span class="token punctuation">(</span>index <span class="token operator">=</span> <span class="token builtin">str</span><span class="token punctuation">,</span> columns <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token string">'age'</span><span class="token punctuation">:</span><span class="token string">'Age'</span><span class="token punctuation">,</span><span class="token string">'name'</span><span class="token punctuation">:</span><span class="token string">'Name'</span><span class="token punctuation">,</span><span class="token string">'adress'</span><span class="token punctuation">:</span><span class="token string">'Adress'</span><span class="token punctuation">}</span><span class="token punctuation">,</span>inplace<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>
+df
+</code></pre>
+<div>
+</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Name</th>
+      <th>Age</th>
+      <th>Adress</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Tom</td>
+      <td>18</td>
+      <td>Beijing,China</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Bob</td>
+      <td>30</td>
+      <td>ShangHai,China</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Mary</td>
+      <td>25</td>
+      <td>GuangZhou,China</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>James</td>
+      <td>40</td>
+      <td>ShenZhen,China</td>
+    </tr>
+  </tbody>
+</table>
+
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">.</span>rename<span class="token punctuation">(</span><span class="token builtin">str</span><span class="token punctuation">.</span>lower<span class="token punctuation">,</span> axis<span class="token operator">=</span><span class="token string">'columns'</span><span class="token punctuation">,</span>inplace <span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>
+df
+</code></pre>
+<div>
+</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>name</th>
+      <th>age</th>
+      <th>adress</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Tom</td>
+      <td>18</td>
+      <td>Beijing,China</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Bob</td>
+      <td>30</td>
+      <td>ShangHai,China</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Mary</td>
+      <td>25</td>
+      <td>GuangZhou,China</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>James</td>
+      <td>40</td>
+      <td>ShenZhen,China</td>
+    </tr>
+  </tbody>
+</table>
+
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">.</span>rename<span class="token punctuation">(</span><span class="token builtin">str</span><span class="token punctuation">.</span>capitalize<span class="token punctuation">,</span> axis<span class="token operator">=</span><span class="token string">'columns'</span><span class="token punctuation">,</span>inplace <span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>
+df
+</code></pre>
+<div>
+</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Name</th>
+      <th>Age</th>
+      <th>Adress</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Tom</td>
+      <td>18</td>
+      <td>Beijing,China</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Bob</td>
+      <td>30</td>
+      <td>ShangHai,China</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Mary</td>
+      <td>25</td>
+      <td>GuangZhou,China</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>James</td>
+      <td>40</td>
+      <td>ShenZhen,China</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="set-column-value-with-conditions">Set column value with conditions</h3>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">[</span><span class="token string">'Group'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">'elderly'</span>
+df<span class="token punctuation">.</span>loc<span class="token punctuation">[</span>df<span class="token punctuation">[</span><span class="token string">'Age'</span><span class="token punctuation">]</span><span class="token operator">&lt;=</span><span class="token number">18</span><span class="token punctuation">,</span> <span class="token string">'Group'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">'young'</span>
+df<span class="token punctuation">.</span>loc<span class="token punctuation">[</span><span class="token punctuation">(</span>df<span class="token punctuation">[</span><span class="token string">'Age'</span><span class="token punctuation">]</span> <span class="token operator">&gt;</span><span class="token number">18</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span> <span class="token punctuation">(</span>df<span class="token punctuation">[</span><span class="token string">'Age'</span><span class="token punctuation">]</span> <span class="token operator">&lt;=</span> <span class="token number">30</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token string">'Group'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">'middle_aged'</span>
+df
+</code></pre>
+<div>
+</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Name</th>
+      <th>Age</th>
+      <th>Adress</th>
+      <th>Group</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Tom</td>
+      <td>18</td>
+      <td>Beijing,China</td>
+      <td>young</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Bob</td>
+      <td>30</td>
+      <td>ShangHai,China</td>
+      <td>middle_aged</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Mary</td>
+      <td>25</td>
+      <td>GuangZhou,China</td>
+      <td>middle_aged</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>James</td>
+      <td>40</td>
+      <td>ShenZhen,China</td>
+      <td>elderly</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="对rows的基础操作">对rows的基础操作</h2>
+<h3 id="loc函数查询">loc函数查询</h3>
+<pre class=" language-python"><code class="prism  language-python">df
+</code></pre>
+<div>
+</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Name</th>
+      <th>Age</th>
+      <th>Adress</th>
+      <th>Group</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Tom</td>
+      <td>18</td>
+      <td>Beijing,China</td>
+      <td>young</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Bob</td>
+      <td>30</td>
+      <td>ShangHai,China</td>
+      <td>middle_aged</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Mary</td>
+      <td>25</td>
+      <td>GuangZhou,China</td>
+      <td>middle_aged</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>James</td>
+      <td>40</td>
+      <td>ShenZhen,China</td>
+      <td>elderly</td>
+    </tr>
+  </tbody>
+</table>
+
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">.</span>loc<span class="token punctuation">[</span><span class="token punctuation">:</span><span class="token punctuation">]</span>
+</code></pre>
+<div>
+</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Name</th>
+      <th>Age</th>
+      <th>Adress</th>
+      <th>Group</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Tom</td>
+      <td>18</td>
+      <td>Beijing,China</td>
+      <td>young</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Bob</td>
+      <td>30</td>
+      <td>ShangHai,China</td>
+      <td>middle_aged</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Mary</td>
+      <td>25</td>
+      <td>GuangZhou,China</td>
+      <td>middle_aged</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>James</td>
+      <td>40</td>
+      <td>ShenZhen,China</td>
+      <td>elderly</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="loc函数条件查询">loc函数条件查询</h3>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">.</span>loc<span class="token punctuation">[</span>df<span class="token punctuation">[</span><span class="token string">'Age'</span><span class="token punctuation">]</span><span class="token operator">&gt;</span><span class="token number">20</span><span class="token punctuation">]</span>
+</code></pre>
+<div>
+</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Name</th>
+      <th>Age</th>
+      <th>Adress</th>
+      <th>Group</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>1</th>
+      <td>Bob</td>
+      <td>30</td>
+      <td>ShangHai,China</td>
+      <td>middle_aged</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Mary</td>
+      <td>25</td>
+      <td>GuangZhou,China</td>
+      <td>middle_aged</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>James</td>
+      <td>40</td>
+      <td>ShenZhen,China</td>
+      <td>elderly</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="loc函数条件行列查询">loc函数条件行列查询</h3>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">.</span>loc<span class="token punctuation">[</span>df<span class="token punctuation">[</span><span class="token string">'Group'</span><span class="token punctuation">]</span><span class="token operator">==</span><span class="token string">'middle_aged'</span><span class="token punctuation">,</span><span class="token string">'Name'</span><span class="token punctuation">]</span>
+</code></pre>
+<pre><code>1     Bob
+2    Mary
+Name: Name, dtype: object
+</code></pre>
+<h3 id="where-查询">Where 查询</h3>
+<pre class=" language-python"><code class="prism  language-python">filter_adult <span class="token operator">=</span> df<span class="token punctuation">[</span><span class="token string">'Age'</span><span class="token punctuation">]</span><span class="token operator">&gt;</span><span class="token number">25</span>
+result <span class="token operator">=</span> df<span class="token punctuation">.</span>where<span class="token punctuation">(</span>filter_adult<span class="token punctuation">)</span>
+result
+</code></pre>
+<div>
+</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Name</th>
+      <th>Age</th>
+      <th>Adress</th>
+      <th>Group</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Bob</td>
+      <td>30.0</td>
+      <td>ShangHai,China</td>
+      <td>middle_aged</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>James</td>
+      <td>40.0</td>
+      <td>ShenZhen,China</td>
+      <td>elderly</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="query-筛选">Query 筛选</h3>
+<pre class=" language-python"><code class="prism  language-python">df
+</code></pre>
+<div>
+</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Name</th>
+      <th>Age</th>
+      <th>Adress</th>
+      <th>Group</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Tom</td>
+      <td>18</td>
+      <td>Beijing,China</td>
+      <td>young</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Bob</td>
+      <td>30</td>
+      <td>ShangHai,China</td>
+      <td>middle_aged</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Mary</td>
+      <td>25</td>
+      <td>GuangZhou,China</td>
+      <td>middle_aged</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>James</td>
+      <td>40</td>
+      <td>ShenZhen,China</td>
+      <td>elderly</td>
+    </tr>
+  </tbody>
+</table>
+
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># df.query('Age==30') </span>
+df<span class="token punctuation">.</span>query<span class="token punctuation">(</span><span class="token string">'Group=="middle_aged"'</span><span class="token operator">and</span> <span class="token string">'Age&gt;30'</span> <span class="token punctuation">)</span>
+</code></pre>
+<div>
+</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Name</th>
+      <th>Age</th>
+      <th>Adress</th>
+      <th>Group</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>3</th>
+      <td>James</td>
+      <td>40</td>
+      <td>ShenZhen,China</td>
+      <td>elderly</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="了解dataframe">了解Dataframe</h3>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">.</span>shape
+</code></pre>
+<pre><code>(4, 4)
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">.</span>describe<span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<div>
+</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Age</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>count</th>
+      <td>4.000000</td>
+    </tr>
+    <tr>
+      <th>mean</th>
+      <td>28.250000</td>
+    </tr>
+    <tr>
+      <th>std</th>
+      <td>9.251126</td>
+    </tr>
+    <tr>
+      <th>min</th>
+      <td>18.000000</td>
+    </tr>
+    <tr>
+      <th>25%</th>
+      <td>23.250000</td>
+    </tr>
+    <tr>
+      <th>50%</th>
+      <td>27.500000</td>
+    </tr>
+    <tr>
+      <th>75%</th>
+      <td>32.500000</td>
+    </tr>
+    <tr>
+      <th>max</th>
+      <td>40.000000</td>
+    </tr>
+  </tbody>
+</table>
+
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">.</span>head<span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">)</span>
+df<span class="token punctuation">.</span>tail<span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">)</span>
+</code></pre>
+<div>
+</div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Name</th>
+      <th>Age</th>
+      <th>Adress</th>
+      <th>Group</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>1</th>
+      <td>Bob</td>
+      <td>30</td>
+      <td>ShangHai,China</td>
+      <td>middle_aged</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Mary</td>
+      <td>25</td>
+      <td>GuangZhou,China</td>
+      <td>middle_aged</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>James</td>
+      <td>40</td>
+      <td>ShenZhen,China</td>
+      <td>elderly</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="读取，写出csv">读取，写出CSV</h2>
+<h3 id="把df导出为csv，不要index">把df导出为CSV，不要index</h3>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">.</span>to_csv<span class="token punctuation">(</span><span class="token string">'person.csv'</span><span class="token punctuation">,</span>index<span class="token operator">=</span><span class="token boolean">None</span><span class="token punctuation">,</span>sep<span class="token operator">=</span><span class="token string">','</span><span class="token punctuation">)</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token keyword">import</span> os
+os<span class="token punctuation">.</span>getcwd<span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<pre><code>'C:\\Users\\E560'
+</code></pre>
+<h3 id="读取csv为dataframe">读取CSV为dataframe</h3>
+<pre class=" language-python"><code class="prism  language-python">person <span class="token operator">=</span> pd<span class="token punctuation">.</span>read_csv<span class="token punctuation">(</span><span class="token string">'person.csv'</span><span class="token punctuation">)</span>
+person
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Name</th>
+      <th>Age</th>
+      <th>Adress</th>
+      <th>Group</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Tom</td>
+      <td>18</td>
+      <td>Beijing,China</td>
+      <td>young</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Bob</td>
+      <td>30</td>
+      <td>ShangHai,China</td>
+      <td>middle_aged</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Mary</td>
+      <td>25</td>
+      <td>GuangZhou,China</td>
+      <td>middle_aged</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>James</td>
+      <td>40</td>
+      <td>ShenZhen,China</td>
+      <td>elderly</td>
+    </tr>
+  </tbody>
+</table>
+
+
+    </div>
+  </div>
+</body>
+
+</html>
