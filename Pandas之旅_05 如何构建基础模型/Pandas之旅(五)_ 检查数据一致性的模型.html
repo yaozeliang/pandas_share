@@ -1,0 +1,841 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pandas之旅(五): 检查数据一致性的模型</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__left">
+    <div class="stackedit__toc">
+      
+<ul>
+<li>
+<ul>
+<li><a href="#pandas-如何根据需要创建简单模型">Pandas 如何根据需要创建简单模型</a></li>
+<li><a href="#制作假数据">1. 制作假数据</a></li>
+<li><a href="#明确模型的目的">2. 明确模型的目的</a></li>
+<li><a href="#开始实践">3. 开始实践</a></li>
+<li><a href="#源码及github地址">4. 源码及GitHub地址</a></li>
+</ul>
+</li>
+</ul>
+
+    </div>
+  </div>
+  <div class="stackedit__right">
+    <div class="stackedit__html">
+      <h2 id="pandas-如何根据需要创建简单模型">Pandas 如何根据需要创建简单模型</h2>
+<p>大家好，今天这一期我想和大家分享有关于pandas创建模型的部分，首先让我们来看一个比较常见的场景：</p>
+<blockquote>
+<p>**你每天需要打开N个excel进行相同的操作，各种眼花缭乱的VBA函数后老眼昏花。。。。</p>
+</blockquote>
+<p>这种情况下，最好的解决办法是先仔细想想业务需求是什么，根据实际情况可以用pandas搭建一个小型模型，一旦搭建完毕，你每天上班时就可以愉快地运行Python脚本，转身去喝杯咖啡，几分钟后心满意足地回来，发现所有的繁琐操作已经搞定了，生活是这么美好、、、</p>
+<p>闲话少说，让我今天抛砖引玉，为大家简单介绍一个我使用比较多的小模型：检验数据一致性（新老数据增加和减少的数量一致），今天的文章主要分为5部分</p>
+<ol>
+<li>制作假数据</li>
+<li>明确模型的目的</li>
+<li>开始实践</li>
+<li>源码及GitHub地址</li>
+</ol>
+<p>好啦，话不多说，让我们一个个看吧</p>
+<h2 id="制作假数据">1. 制作假数据</h2>
+<pre class=" language-python"><code class="prism  language-python"><span class="token keyword">import</span> os
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment">#这两行仅仅是切换路径，方便我上传Github，大家不用理会</span>
+os<span class="token punctuation">.</span>chdir<span class="token punctuation">(</span><span class="token string">"F:\\Python教程\\segmentfault\\pandas_share\\Pandas之旅_05 如何构建基础模型"</span><span class="token punctuation">)</span>
+os<span class="token punctuation">.</span>getcwd<span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<pre><code>'F:\\Python教程\\segmentfault\\pandas_share\\Pandas之旅_05 如何构建基础模型'
+</code></pre>
+<p>首先让我们一起制作一些假数据，我这里接下来生成一些有关订单的假数据，当然，到了文章的最后可能你会发现我们的模型并不是完美适用于这个类型，你会在生活中根据自己需要来调整，但是至少基础的思路已经有啦！</p>
+<p>先建立一个fake_product的字典，keys是产品，value是单价，这里我们用一个在网上随便找到的商品名称的csv数据集,它只有一列ProductNames，product_names.csv和最后的代码都会放在github上，如果大家感兴趣可以下载~</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token keyword">import</span> numpy <span class="token keyword">as</span> np
+<span class="token keyword">import</span> pandas <span class="token keyword">as</span> pd
+f<span class="token string">"Using {pd.__name__},{pd.__version__}"</span>
+</code></pre>
+<pre><code>'Using pandas,0.23.0'
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">fake_df <span class="token operator">=</span> pd<span class="token punctuation">.</span>read_csv<span class="token punctuation">(</span><span class="token string">"product_names.csv"</span><span class="token punctuation">)</span>
+fake_df<span class="token punctuation">.</span>head<span class="token punctuation">(</span><span class="token number">10</span><span class="token punctuation">)</span>
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Product_Names</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>TrailChef Deluxe Cook Set</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>TrailChef Double Flame</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Star Dome</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Star Gazer 2</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Hibernator Lite</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>Hibernator Extreme</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>Hibernator Camp Cot</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>Firefly Lite</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>Firefly Extreme</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>EverGlow Single</td>
+    </tr>
+  </tbody>
+</table>
+<pre class=" language-python"><code class="prism  language-python">fake_df<span class="token punctuation">[</span><span class="token string">'Product_Names'</span><span class="token punctuation">]</span><span class="token punctuation">.</span>is_unique
+</code></pre>
+<pre><code>True
+</code></pre>
+<p>这里我们可以看到，数据集主要包括的就是一些产品的名字，而且没有重复值，我们现在把他们导出至一个字典，并随机给每个产品任意的价格(在20至100之间),因为这里我们要随机生成一些假数据，所以让我们引用random这个包</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token keyword">import</span> random
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">fake_product <span class="token operator">=</span> <span class="token punctuation">{</span> k<span class="token punctuation">:</span>random<span class="token punctuation">.</span>randint<span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">,</span><span class="token number">100</span><span class="token punctuation">)</span> <span class="token keyword">for</span> k <span class="token keyword">in</span> fake_df<span class="token punctuation">[</span><span class="token string">'Product_Names'</span><span class="token punctuation">]</span><span class="token punctuation">}</span>
+fake_product
+</code></pre>
+<pre><code>{'TrailChef Deluxe Cook Set': 62,
+ 'TrailChef Double Flame': 78,
+ 'Star Dome': 58,
+ 'Star Gazer 2': 73,
+ 'Hibernator Lite': 56,
+ 'Hibernator Extreme': 99,
+ 'Hibernator Camp Cot': 33,
+ 'Firefly Lite': 27,
+ 'Firefly Extreme': 30,
+ 'EverGlow Single': 44,
+ 'EverGlow Butane': 33,
+ 'Husky Rope 50': 59,
+ 'Husky Rope 60': 81,
+ 'Husky Rope 100': 71,
+ 'Husky Rope 200': 81,
+ 'Granite Climbing Helmet': 86,
+ 'Husky Harness': 76,
+ 'Husky Harness Extreme': 73,
+ 'Granite Signal Mirror': 67,
+ 'Granite Carabiner': 63,
+ 'Granite Belay': 49,
+ 'Granite Pulley': 48,
+ 'Firefly Climbing Lamp': 47,
+ 'Firefly Charger': 60,
+ 'Firefly Rechargeable Battery': 52,
+ 'Granite Chalk Bag': 22,
+ 'Granite Ice': 71,
+ 'Granite Hammer': 50,
+ 'Granite Shovel': 41,
+ 'Granite Grip': 74,
+ 'Granite Axe': 68,
+ 'Granite Extreme': 74,
+ 'Mountain Man Extreme': 87,
+ 'Polar Sun': 82,
+ 'Polar Ice': 47,
+ 'Edge Extreme': 53,
+ 'Bear Survival Edge': 81,
+ 'Glacier GPS Extreme': 48,
+ 'BugShield Extreme': 87,
+ 'Sun Shelter Stick': 42,
+ 'Compact Relief Kit': 46,
+ 'Aloe Relief': 24,
+ 'Infinity': 73,
+ 'TX': 43,
+ 'Legend': 100,
+ 'Kodiak': 44,
+ 'Capri': 31,
+ 'Cat Eye': 62,
+ 'Dante': 71,
+ 'Fairway': 77,
+ 'Inferno': 59,
+ 'Maximus': 38,
+ 'Trendi': 35,
+ 'Zone': 87,
+ 'Max Gizmo': 67,
+ 'Pocket Gizmo': 73,
+ 'Ranger Vision': 73,
+ 'Trail Master': 96,
+ 'Hailstorm Steel Irons': 79,
+ 'Hailstorm Titanium Irons': 31,
+ 'Lady Hailstorm Steel Irons': 91,
+ 'Lady Hailstorm Titanium Irons': 99,
+ 'Hailstorm Titanium Woods Set': 74,
+ 'Hailstorm Steel Woods Set': 30,
+ 'Lady Hailstorm Titanium Woods Set': 99,
+ 'Lady Hailstorm Steel Woods Set': 84,
+ 'Course Pro Putter': 64,
+ 'Blue Steel Putter': 26,
+ 'Blue Steel Max Putter': 96,
+ 'Course Pro Golf and Tee Set': 90,
+ 'Course Pro Umbrella': 20,
+ 'Course Pro Golf Bag': 66,
+ 'Course Pro Gloves': 61,
+ 'TrailChef Canteen': 60,
+ 'TrailChef Kitchen Kit': 53,
+ 'TrailChef Cup': 88,
+ 'TrailChef Cook Set': 27,
+ 'TrailChef Single Flame': 45,
+ 'TrailChef Kettle': 70,
+ 'TrailChef Utensils': 88,
+ 'Star Gazer 6': 42,
+ 'Star Peg': 28,
+ 'Hibernator': 47,
+ 'Hibernator Self - Inflating Mat': 66,
+ 'Hibernator Pad': 89,
+ 'Hibernator Pillow': 84,
+ 'Canyon Mule Climber Backpack': 82,
+ 'Canyon Mule Weekender Backpack': 92,
+ 'Canyon Mule Journey Backpack': 82,
+ 'Canyon Mule Cooler': 23,
+ 'Canyon Mule Carryall': 56,
+ 'Firefly Mapreader': 77,
+ 'Firefly 2': 76,
+ 'Firefly 4': 75,
+ 'Firefly Multi-light': 91,
+ 'EverGlow Double': 34,
+ 'EverGlow Lamp': 28,
+ 'Mountain Man Analog': 39,
+ 'Mountain Man Digital': 85,
+ 'Mountain Man Deluxe': 84,
+ 'Mountain Man Combination': 40,
+ 'Venue': 56,
+ 'Lux': 44,
+ 'Polar Sports': 20,
+ 'Polar Wave': 62,
+ 'Bella': 45,
+ 'Hawk Eye': 42,
+ 'Seeker 35': 81,
+ 'Seeker 50': 90,
+ 'Opera Vision': 98,
+ 'Glacier Basic': 63,
+ 'Glacier GPS': 66,
+ 'Trail Scout': 32,
+ 'BugShield Spray': 34,
+ 'BugShield Lotion Lite': 90,
+ 'BugShield Lotion': 84,
+ 'Sun Blocker': 88,
+ 'Sun Shelter 15': 45,
+ 'Sun Shelter 30': 100,
+ 'Sun Shield': 62,
+ 'Deluxe Family Relief Kit': 43,
+ 'Calamine Relief': 82,
+ 'Insect Bite Relief': 72,
+ 'Star Lite': 32,
+ 'Star Gazer 3': 95,
+ 'Single Edge': 87,
+ 'Double Edge': 20,
+ 'Bear Edge': 80,
+ 'Glacier Deluxe': 82,
+ 'BugShield Natural': 83,
+ 'TrailChef Water Bag': 99,
+ 'Canyon Mule Extreme Backpack': 58,
+ 'EverGlow Kerosene': 78,
+ 'Sam': 67,
+ 'Polar Extreme': 34,
+ 'Seeker Extreme': 43,
+ 'Seeker Mini': 26,
+ 'Flicker Lantern': 44,
+ 'Trail Star': 47,
+ 'Zodiak': 31,
+ 'Sky Pilot': 58,
+ 'Retro': 99,
+ 'Astro Pilot': 99,
+ 'Auto Pilot': 20}
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token builtin">len</span><span class="token punctuation">(</span>fake_product<span class="token punctuation">)</span>
+</code></pre>
+<pre><code>144
+</code></pre>
+<p>这里我们看到生成了一个有144个item组成，key为产品名称，value及单价的fake_product字典，接下来为了省事，<br>
+我简单地创建了一个方法get_fake_data可以让我们最终得到一个填充好的假数据集合，返回的也是字典</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token keyword">def</span> <span class="token function">get_fake_data</span><span class="token punctuation">(</span>id_range_start<span class="token punctuation">,</span>id_range_end<span class="token punctuation">,</span>random_quantity_range<span class="token operator">=</span><span class="token number">50</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+<span class="token comment">#     Id=["A00"+str(i) for i in range(0,id_range)]</span>
+    Id<span class="token operator">=</span><span class="token punctuation">[</span><span class="token punctuation">]</span>
+    Quantity <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+    Product_name<span class="token operator">=</span><span class="token punctuation">[</span><span class="token punctuation">]</span>
+    Unit_price<span class="token operator">=</span><span class="token punctuation">[</span><span class="token punctuation">]</span>
+    Total_price<span class="token operator">=</span><span class="token punctuation">[</span><span class="token punctuation">]</span>
+
+    <span class="token keyword">for</span> i <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span>id_range_start<span class="token punctuation">,</span>id_range_end<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        random_quantity <span class="token operator">=</span> random<span class="token punctuation">.</span>randint<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span>random_quantity_range<span class="token punctuation">)</span>
+        name<span class="token punctuation">,</span> price <span class="token operator">=</span> random<span class="token punctuation">.</span>choice<span class="token punctuation">(</span><span class="token builtin">list</span><span class="token punctuation">(</span>fake_product<span class="token punctuation">.</span>items<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+
+        Id<span class="token punctuation">.</span>append<span class="token punctuation">(</span><span class="token string">"A00"</span><span class="token operator">+</span><span class="token builtin">str</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        Quantity<span class="token punctuation">.</span>append<span class="token punctuation">(</span>random_quantity<span class="token punctuation">)</span>
+        Product_name<span class="token punctuation">.</span>append<span class="token punctuation">(</span>name<span class="token punctuation">)</span>
+        Unit_price<span class="token punctuation">.</span>append<span class="token punctuation">(</span>price<span class="token punctuation">)</span>
+        Total_price<span class="token punctuation">.</span>append<span class="token punctuation">(</span>price<span class="token operator">*</span>random_quantity<span class="token punctuation">)</span>
+   
+    result <span class="token operator">=</span> <span class="token punctuation">{</span>
+    <span class="token string">'Product_ID'</span><span class="token punctuation">:</span>Id<span class="token punctuation">,</span>
+    <span class="token string">'Product_Name'</span><span class="token punctuation">:</span>Product_name<span class="token punctuation">,</span>
+    <span class="token string">'Quantity'</span><span class="token punctuation">:</span>Quantity<span class="token punctuation">,</span>
+    <span class="token string">'Unit_price'</span><span class="token punctuation">:</span>Unit_price<span class="token punctuation">,</span>
+    <span class="token string">'Total_price'</span><span class="token punctuation">:</span>Total_price
+<span class="token punctuation">}</span>
+    
+    <span class="token keyword">return</span> result
+
+<span class="token comment"># total = [quantity[i]* v for i,v in enumerate(unit_price)]    也可以最后用推导式来求total，皮一下</span>
+<span class="token comment"># total_price=[q*p for q in quantity for p in unit_price]</span>
+
+</code></pre>
+<p>首先，这个方法不够简洁，大家可以优化一下，但是今天的重点在于小模型，让我们着重看一下最后返回的dict，它包含如下几列：</p>
+<ul>
+<li>Product_ID：订单号，按照顺序递增生成</li>
+<li>Product_Name：产品名称，随机生成</li>
+<li>Quantity：随机生成在1~random_quantity_range之间的每个订单的产品订购量</li>
+<li>Unit_price:产品价格</li>
+<li>Total_price：总价</li>
+</ul>
+<p>每组数据长度均为 id_range_end - id_range_start，现在让我们生成两组假数据：</p>
+<pre class=" language-python"><code class="prism  language-python">fake_data<span class="token operator">=</span> get_fake_data<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token builtin">len</span><span class="token punctuation">(</span>fake_product<span class="token punctuation">)</span><span class="token operator">+</span><span class="token number">1</span><span class="token punctuation">)</span>
+</code></pre>
+<p>这里我们可以看到我们生成了一组假数据，Id从A001 ~ A00145</p>
+<p>让我们简单看看假数据的keys和每组数据的长度：</p>
+<pre class=" language-python"><code class="prism  language-python">fake_data<span class="token punctuation">.</span>keys<span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<pre><code>dict_keys(['Product_ID', 'Product_Name', 'Quantity', 'Unit_price', 'Total_price'])
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token keyword">for</span> v <span class="token keyword">in</span> fake_data<span class="token punctuation">.</span>values<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token builtin">len</span><span class="token punctuation">(</span>v<span class="token punctuation">)</span><span class="token punctuation">)</span>
+</code></pre>
+<pre><code>144
+144
+144
+144
+144
+</code></pre>
+<p>可以发现每组key对应的list长度都是144</p>
+<h2 id="明确模型的目的">2. 明确模型的目的</h2>
+<p>我们可以利用pandas自带的from_dict方法把dict转化为Dataframe，这里我们分别用刚刚生成的fake_data来模拟1月的库存和2月的库存情况，我们可以把fake_data分成两组，A001-A00140一组，A008-A00144一组，这样就完美的模拟了实际情况。</p>
+<p>因为大多数的商品名称不会改变（8~140的部分），但是从一月到二月，因为各种原因我们减少了7个商品种类的库存（1-7），又增加了4个种类的库存（141-144），我们这里验证一致性的公式就是：</p>
+<blockquote>
+<p>新增的 + 一月数据总量 = 减少的 + 二月数据总量</p>
+</blockquote>
+<h2 id="开始实践">3. 开始实践</h2>
+<p>现在让我们来实现这个小模型，首先生成stock_jan，stock_fev两个dataframe</p>
+<pre class=" language-python"><code class="prism  language-python">stock<span class="token operator">=</span> pd<span class="token punctuation">.</span>DataFrame<span class="token punctuation">.</span>from_dict<span class="token punctuation">(</span>fake_data<span class="token punctuation">)</span>
+stock<span class="token punctuation">.</span>head<span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Product_ID</th>
+      <th>Product_Name</th>
+      <th>Quantity</th>
+      <th>Unit_price</th>
+      <th>Total_price</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>A001</td>
+      <td>Course Pro Golf Bag</td>
+      <td>39</td>
+      <td>66</td>
+      <td>2574</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>A002</td>
+      <td>EverGlow Kerosene</td>
+      <td>18</td>
+      <td>78</td>
+      <td>1404</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>A003</td>
+      <td>Lux</td>
+      <td>24</td>
+      <td>44</td>
+      <td>1056</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>A004</td>
+      <td>Course Pro Putter</td>
+      <td>12</td>
+      <td>64</td>
+      <td>768</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>A005</td>
+      <td>Seeker 50</td>
+      <td>42</td>
+      <td>90</td>
+      <td>3780</td>
+    </tr>
+  </tbody>
+</table>
+<pre class=" language-python"><code class="prism  language-python">stock<span class="token punctuation">.</span>set_index<span class="token punctuation">(</span>stock<span class="token punctuation">[</span><span class="token string">'Product_ID'</span><span class="token punctuation">]</span><span class="token punctuation">,</span>inplace<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>
+stock<span class="token punctuation">.</span>drop<span class="token punctuation">(</span><span class="token string">'Product_ID'</span><span class="token punctuation">,</span>axis<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">,</span>inplace<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>
+stock<span class="token punctuation">.</span>head<span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Product_Name</th>
+      <th>Quantity</th>
+      <th>Unit_price</th>
+      <th>Total_price</th>
+    </tr>
+    <tr>
+      <th>Product_ID</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>A001</th>
+      <td>Course Pro Golf Bag</td>
+      <td>39</td>
+      <td>66</td>
+      <td>2574</td>
+    </tr>
+    <tr>
+      <th>A002</th>
+      <td>EverGlow Kerosene</td>
+      <td>18</td>
+      <td>78</td>
+      <td>1404</td>
+    </tr>
+    <tr>
+      <th>A003</th>
+      <td>Lux</td>
+      <td>24</td>
+      <td>44</td>
+      <td>1056</td>
+    </tr>
+    <tr>
+      <th>A004</th>
+      <td>Course Pro Putter</td>
+      <td>12</td>
+      <td>64</td>
+      <td>768</td>
+    </tr>
+    <tr>
+      <th>A005</th>
+      <td>Seeker 50</td>
+      <td>42</td>
+      <td>90</td>
+      <td>3780</td>
+    </tr>
+  </tbody>
+</table>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># 获得1月份stock数据,A001-A00140</span>
+stock_jan<span class="token operator">=</span>stock<span class="token punctuation">[</span><span class="token punctuation">:</span><span class="token string">'A00140'</span><span class="token punctuation">]</span>
+stock_jan<span class="token punctuation">.</span>tail<span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Product_Name</th>
+      <th>Quantity</th>
+      <th>Unit_price</th>
+      <th>Total_price</th>
+    </tr>
+    <tr>
+      <th>Product_ID</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>A00136</th>
+      <td>Flicker Lantern</td>
+      <td>1</td>
+      <td>44</td>
+      <td>44</td>
+    </tr>
+    <tr>
+      <th>A00137</th>
+      <td>BugShield Spray</td>
+      <td>8</td>
+      <td>34</td>
+      <td>272</td>
+    </tr>
+    <tr>
+      <th>A00138</th>
+      <td>Glacier Basic</td>
+      <td>25</td>
+      <td>63</td>
+      <td>1575</td>
+    </tr>
+    <tr>
+      <th>A00139</th>
+      <td>Sun Blocker</td>
+      <td>23</td>
+      <td>88</td>
+      <td>2024</td>
+    </tr>
+    <tr>
+      <th>A00140</th>
+      <td>Granite Carabiner</td>
+      <td>11</td>
+      <td>63</td>
+      <td>693</td>
+    </tr>
+  </tbody>
+</table>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># 获得2月份stock数据</span>
+stock_fev<span class="token operator">=</span>stock<span class="token punctuation">[</span><span class="token string">'A008'</span><span class="token punctuation">:</span><span class="token punctuation">]</span>
+stock_fev<span class="token punctuation">.</span>tail<span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Product_Name</th>
+      <th>Quantity</th>
+      <th>Unit_price</th>
+      <th>Total_price</th>
+    </tr>
+    <tr>
+      <th>Product_ID</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>A00140</th>
+      <td>Granite Carabiner</td>
+      <td>11</td>
+      <td>63</td>
+      <td>693</td>
+    </tr>
+    <tr>
+      <th>A00141</th>
+      <td>TrailChef Utensils</td>
+      <td>24</td>
+      <td>88</td>
+      <td>2112</td>
+    </tr>
+    <tr>
+      <th>A00142</th>
+      <td>TrailChef Deluxe Cook Set</td>
+      <td>9</td>
+      <td>62</td>
+      <td>558</td>
+    </tr>
+    <tr>
+      <th>A00143</th>
+      <td>Trail Star</td>
+      <td>21</td>
+      <td>47</td>
+      <td>987</td>
+    </tr>
+    <tr>
+      <th>A00144</th>
+      <td>Ranger Vision</td>
+      <td>19</td>
+      <td>73</td>
+      <td>1387</td>
+    </tr>
+  </tbody>
+</table>
+<p>现在让我们简单停顿一下，看看这两个df：</p>
+<ul>
+<li>stock_jan: A001 - A00140的所有数据</li>
+<li>stock_fev: A008 - A00144的所有数据</li>
+</ul>
+<p>接下来的操作很简单，用我们上篇文章提到的merge函数，这里merge的公有列为索引Product_ID，Product_Name,使用的是outer merge</p>
+<pre class=" language-python"><code class="prism  language-python">merge_keys<span class="token operator">=</span><span class="token punctuation">[</span><span class="token string">'Product_ID'</span><span class="token punctuation">,</span><span class="token string">'Product_Name'</span><span class="token punctuation">]</span> 
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">check_corehence <span class="token operator">=</span> stock_jan<span class="token punctuation">.</span>merge<span class="token punctuation">(</span>stock_fev<span class="token punctuation">,</span>on<span class="token operator">=</span>merge_keys<span class="token punctuation">,</span>how<span class="token operator">=</span><span class="token string">'outer'</span><span class="token punctuation">,</span>suffixes<span class="token operator">=</span><span class="token punctuation">(</span><span class="token string">"_jan"</span><span class="token punctuation">,</span><span class="token string">"_fev"</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+check_corehence<span class="token punctuation">.</span>head<span class="token punctuation">(</span><span class="token number">10</span><span class="token punctuation">)</span>
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Product_Name</th>
+      <th>Quantity_jan</th>
+      <th>Unit_price_jan</th>
+      <th>Total_price_jan</th>
+      <th>Quantity_fev</th>
+      <th>Unit_price_fev</th>
+      <th>Total_price_fev</th>
+    </tr>
+    <tr>
+      <th>Product_ID</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>A001</th>
+      <td>Course Pro Golf Bag</td>
+      <td>39.0</td>
+      <td>66.0</td>
+      <td>2574.0</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>A002</th>
+      <td>EverGlow Kerosene</td>
+      <td>18.0</td>
+      <td>78.0</td>
+      <td>1404.0</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>A003</th>
+      <td>Lux</td>
+      <td>24.0</td>
+      <td>44.0</td>
+      <td>1056.0</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>A004</th>
+      <td>Course Pro Putter</td>
+      <td>12.0</td>
+      <td>64.0</td>
+      <td>768.0</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>A005</th>
+      <td>Seeker 50</td>
+      <td>42.0</td>
+      <td>90.0</td>
+      <td>3780.0</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>A006</th>
+      <td>Course Pro Golf Bag</td>
+      <td>27.0</td>
+      <td>66.0</td>
+      <td>1782.0</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>A007</th>
+      <td>Husky Rope 100</td>
+      <td>3.0</td>
+      <td>71.0</td>
+      <td>213.0</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>A008</th>
+      <td>EverGlow Double</td>
+      <td>18.0</td>
+      <td>34.0</td>
+      <td>612.0</td>
+      <td>18.0</td>
+      <td>34.0</td>
+      <td>612.0</td>
+    </tr>
+    <tr>
+      <th>A009</th>
+      <td>Opera Vision</td>
+      <td>30.0</td>
+      <td>98.0</td>
+      <td>2940.0</td>
+      <td>30.0</td>
+      <td>98.0</td>
+      <td>2940.0</td>
+    </tr>
+    <tr>
+      <th>A0010</th>
+      <td>TX</td>
+      <td>38.0</td>
+      <td>43.0</td>
+      <td>1634.0</td>
+      <td>38.0</td>
+      <td>43.0</td>
+      <td>1634.0</td>
+    </tr>
+  </tbody>
+</table>
+
+<pre class=" language-python"><code class="prism  language-python">check_corehence<span class="token punctuation">.</span>tail<span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Product_Name</th>
+      <th>Quantity_jan</th>
+      <th>Unit_price_jan</th>
+      <th>Total_price_jan</th>
+      <th>Quantity_fev</th>
+      <th>Unit_price_fev</th>
+      <th>Total_price_fev</th>
+    </tr>
+    <tr>
+      <th>Product_ID</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>A00140</th>
+      <td>Granite Carabiner</td>
+      <td>11.0</td>
+      <td>63.0</td>
+      <td>693.0</td>
+      <td>11.0</td>
+      <td>63.0</td>
+      <td>693.0</td>
+    </tr>
+    <tr>
+      <th>A00141</th>
+      <td>TrailChef Utensils</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>24.0</td>
+      <td>88.0</td>
+      <td>2112.0</td>
+    </tr>
+    <tr>
+      <th>A00142</th>
+      <td>TrailChef Deluxe Cook Set</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>9.0</td>
+      <td>62.0</td>
+      <td>558.0</td>
+    </tr>
+    <tr>
+      <th>A00143</th>
+      <td>Trail Star</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>21.0</td>
+      <td>47.0</td>
+      <td>987.0</td>
+    </tr>
+    <tr>
+      <th>A00144</th>
+      <td>Ranger Vision</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>19.0</td>
+      <td>73.0</td>
+      <td>1387.0</td>
+    </tr>
+  </tbody>
+</table>
+<p>大家可以发现前7行正是减少的商品库存，而后4行正是二月份新增的商品库存，现在让我们分别获得减少的商品库存数据和新增的商品库存数据：</p>
+<pre class=" language-python"><code class="prism  language-python">new_stock <span class="token operator">=</span> check_corehence<span class="token punctuation">.</span>loc<span class="token punctuation">[</span><span class="token punctuation">(</span>check_corehence<span class="token punctuation">[</span><span class="token string">'Quantity_jan'</span><span class="token punctuation">]</span><span class="token punctuation">.</span>isnull<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span> <span class="token punctuation">(</span>check_corehence<span class="token punctuation">[</span><span class="token string">'Quantity_fev'</span><span class="token punctuation">]</span><span class="token punctuation">.</span>notnull<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+num_new <span class="token operator">=</span> new_stock<span class="token punctuation">.</span>shape<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>
+num_new
+</code></pre>
+<pre><code>4
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">remove_stock <span class="token operator">=</span> check_corehence<span class="token punctuation">.</span>loc<span class="token punctuation">[</span><span class="token punctuation">(</span>check_corehence<span class="token punctuation">[</span><span class="token string">'Quantity_fev'</span><span class="token punctuation">]</span><span class="token punctuation">.</span>isnull<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span> <span class="token punctuation">(</span>check_corehence<span class="token punctuation">[</span><span class="token string">'Quantity_jan'</span><span class="token punctuation">]</span><span class="token punctuation">.</span>notnull<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+num_remove <span class="token operator">=</span> remove_stock<span class="token punctuation">.</span>shape<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>
+num_remove
+</code></pre>
+<pre><code>7
+</code></pre>
+<p>再让我们分别看看1月和2月的数据量：</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># 1月数据量</span>
+num_stock_jan <span class="token operator">=</span> stock_jan<span class="token punctuation">.</span>shape<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>
+num_stock_jan
+</code></pre>
+<pre><code>140
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># 2月数据量</span>
+num_stock_fev <span class="token operator">=</span> stock_fev<span class="token punctuation">.</span>shape<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>
+num_stock_fev
+</code></pre>
+<pre><code>137
+</code></pre>
+<p>现在让我们套入公式：</p>
+<pre class=" language-python"><code class="prism  language-python">num_stock_jan <span class="token operator">+</span> num_new
+</code></pre>
+<pre><code>144
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">num_stock_fev <span class="token operator">+</span> num_remove
+</code></pre>
+<pre><code>144
+</code></pre>
+<p>结果相等，数据一致性过关！</p>
+<h2 id="源码及github地址">4. 源码及GitHub地址</h2>
+<p>这一期为大家分享了一个简单的pandas检验数据一致性的模型，模型还是非常初级阶段，功能非常简单，但是基础的搭建流程想必大家已经熟悉了，接下来小伙伴们可以根据业务需求搭建自己的模型啦，只要你每天和Excel打交道，总有一款模型适合你</p>
+<p>我把这一期的ipynb文件和py文件放到了Github上，大家如果想要下载可以点击下面的链接：</p>
+<ul>
+<li>Github仓库地址： <a href="https://github.com/yaozeliang/pandas_share/tree/master/Pandas%E4%B9%8B%E6%97%85_04%20pandas%E8%B6%85%E5%AE%9E%E7%94%A8%E6%8A%80%E5%B7%A7">https://github.com/yaozeliang/pandas_share</a></li>
+</ul>
+<p>希望大家能够继续支持我，完结，撒花</p>
+
+    </div>
+  </div>
+</body>
+
+</html>
