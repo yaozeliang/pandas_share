@@ -1,0 +1,908 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pandas之旅(四): pandas超实用技巧</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__left">
+    <div class="stackedit__toc">
+      
+<ul>
+<li>
+<ul>
+<li><a href="#pandas不为人知的八大实用技巧">Pandas不为人知的八大实用技巧</a></li>
+</ul>
+</li>
+</ul>
+
+    </div>
+  </div>
+  <div class="stackedit__right">
+    <div class="stackedit__html">
+      <h2 id="pandas不为人知的八大实用技巧">Pandas不为人知的八大实用技巧</h2>
+<p>大家好，我今天勤快地回来了，这一期主要是和大家分享一些pandas的实用技巧，会在日常生活中大大提升效率，希望可以帮助到大家,还是老样子，<br>
+先给大家奉上这一期的章节目录:</p>
+<ol>
+<li>自定义pandas选项，设置</li>
+<li>实用pandas中testing模块构建测试数据</li>
+<li>巧用accessor接口方法</li>
+<li>合并其他列拼接DatetimeIndex</li>
+<li>使用分类数据（Categorical Data）节省时间和空间</li>
+<li>利用Mapping巧妙实现映射</li>
+<li>压缩pandas对象</li>
+<li>源码及GitHub地址</li>
+</ol>
+<p>好啦，话不多说，让我们一个个看吧</p>
+<h3 id="自定义pandas选项，设置">1. 自定义pandas选项，设置</h3>
+<p>首先，大家可能不知道，pandas里面有一个方法pd.set_option()，利用它我们可以改变一些pandas中默认的核心设置，<br>
+从而适应我们自身的需要，开始前还是老样子，让我们先导入numpy和pandas包</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token keyword">import</span> numpy <span class="token keyword">as</span> np
+<span class="token keyword">import</span> pandas <span class="token keyword">as</span> pd
+f<span class="token string">'Using {pd.__name__}, Version {pd.__version__}'</span>
+</code></pre>
+<pre><code>'Using pandas, Version 0.23.0'
+</code></pre>
+<p>现在让我们编写一个start方法来实现自定义pandas设置</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token keyword">def</span> <span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    options <span class="token operator">=</span> <span class="token punctuation">{</span>
+        <span class="token string">'display'</span><span class="token punctuation">:</span> <span class="token punctuation">{</span>
+            <span class="token string">'max_columns'</span><span class="token punctuation">:</span> <span class="token boolean">None</span><span class="token punctuation">,</span>
+            <span class="token string">'max_colwidth'</span><span class="token punctuation">:</span> <span class="token number">25</span><span class="token punctuation">,</span>
+            <span class="token string">'expand_frame_repr'</span><span class="token punctuation">:</span> <span class="token boolean">False</span><span class="token punctuation">,</span>  <span class="token comment"># Don't wrap to multiple pages</span>
+            <span class="token string">'max_rows'</span><span class="token punctuation">:</span> <span class="token number">14</span><span class="token punctuation">,</span>
+            <span class="token string">'max_seq_items'</span><span class="token punctuation">:</span> <span class="token number">50</span><span class="token punctuation">,</span>         <span class="token comment"># Max length of printed sequence</span>
+            <span class="token string">'precision'</span><span class="token punctuation">:</span> <span class="token number">4</span><span class="token punctuation">,</span>
+            <span class="token string">'show_dimensions'</span><span class="token punctuation">:</span> <span class="token boolean">False</span>
+        <span class="token punctuation">}</span><span class="token punctuation">,</span>
+        <span class="token string">'mode'</span><span class="token punctuation">:</span> <span class="token punctuation">{</span>
+            <span class="token string">'chained_assignment'</span><span class="token punctuation">:</span> <span class="token boolean">None</span>   <span class="token comment"># Controls SettingWithCopyWarning</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">for</span> category<span class="token punctuation">,</span> option <span class="token keyword">in</span> options<span class="token punctuation">.</span>items<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">for</span> op<span class="token punctuation">,</span> value <span class="token keyword">in</span> option<span class="token punctuation">.</span>items<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+            pd<span class="token punctuation">.</span>set_option<span class="token punctuation">(</span>f<span class="token string">'{category}.{op}'</span><span class="token punctuation">,</span> value<span class="token punctuation">)</span>  <span class="token comment"># Python 3.6+</span>
+
+<span class="token keyword">if</span> __name__ <span class="token operator">==</span> <span class="token string">'__main__'</span><span class="token punctuation">:</span>
+    start<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword">del</span> start  <span class="token comment"># Clean up namespace in the interpreter</span>
+</code></pre>
+<p>大家可以发现，我们在方法的最后调用了pandas的set_option方法，直接利用我们自定义的参数替代了原有的pandas参数，现在让我们测试一下：</p>
+<pre class=" language-python"><code class="prism  language-python">pd<span class="token punctuation">.</span>get_option<span class="token punctuation">(</span><span class="token string">'display.max_rows'</span><span class="token punctuation">)</span>
+</code></pre>
+<pre><code>14
+</code></pre>
+<p>可以发现max_rows 已经被替换成了我们设置的14，现在用一个真实的例子，我们利用一组公开的鲍鱼各项指标的数据来实验，数据源来自机器学习平台的公开数据</p>
+<pre class=" language-python"><code class="prism  language-python">url <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token string">'https://archive.ics.uci.edu/ml/'</span>
+       <span class="token string">'machine-learning-databases/abalone/abalone.data'</span><span class="token punctuation">)</span>
+cols <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token string">'sex'</span><span class="token punctuation">,</span> <span class="token string">'length'</span><span class="token punctuation">,</span> <span class="token string">'diam'</span><span class="token punctuation">,</span> <span class="token string">'height'</span><span class="token punctuation">,</span> <span class="token string">'weight'</span><span class="token punctuation">,</span> <span class="token string">'rings'</span><span class="token punctuation">]</span>
+abalone <span class="token operator">=</span> pd<span class="token punctuation">.</span>read_csv<span class="token punctuation">(</span>url<span class="token punctuation">,</span> usecols<span class="token operator">=</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">8</span><span class="token punctuation">]</span><span class="token punctuation">,</span> names<span class="token operator">=</span>cols<span class="token punctuation">)</span>
+abalone
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>sex</th>
+      <th>length</th>
+      <th>diam</th>
+      <th>height</th>
+      <th>weight</th>
+      <th>rings</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>M</td>
+      <td>0.455</td>
+      <td>0.365</td>
+      <td>0.095</td>
+      <td>0.5140</td>
+      <td>15</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>M</td>
+      <td>0.350</td>
+      <td>0.265</td>
+      <td>0.090</td>
+      <td>0.2255</td>
+      <td>7</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>F</td>
+      <td>0.530</td>
+      <td>0.420</td>
+      <td>0.135</td>
+      <td>0.6770</td>
+      <td>9</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>M</td>
+      <td>0.440</td>
+      <td>0.365</td>
+      <td>0.125</td>
+      <td>0.5160</td>
+      <td>10</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>I</td>
+      <td>0.330</td>
+      <td>0.255</td>
+      <td>0.080</td>
+      <td>0.2050</td>
+      <td>7</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>I</td>
+      <td>0.425</td>
+      <td>0.300</td>
+      <td>0.095</td>
+      <td>0.3515</td>
+      <td>8</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>F</td>
+      <td>0.530</td>
+      <td>0.415</td>
+      <td>0.150</td>
+      <td>0.7775</td>
+      <td>20</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>4170</th>
+      <td>M</td>
+      <td>0.550</td>
+      <td>0.430</td>
+      <td>0.130</td>
+      <td>0.8395</td>
+      <td>10</td>
+    </tr>
+    <tr>
+      <th>4171</th>
+      <td>M</td>
+      <td>0.560</td>
+      <td>0.430</td>
+      <td>0.155</td>
+      <td>0.8675</td>
+      <td>8</td>
+    </tr>
+    <tr>
+      <th>4172</th>
+      <td>F</td>
+      <td>0.565</td>
+      <td>0.450</td>
+      <td>0.165</td>
+      <td>0.8870</td>
+      <td>11</td>
+    </tr>
+    <tr>
+      <th>4173</th>
+      <td>M</td>
+      <td>0.590</td>
+      <td>0.440</td>
+      <td>0.135</td>
+      <td>0.9660</td>
+      <td>10</td>
+    </tr>
+    <tr>
+      <th>4174</th>
+      <td>M</td>
+      <td>0.600</td>
+      <td>0.475</td>
+      <td>0.205</td>
+      <td>1.1760</td>
+      <td>9</td>
+    </tr>
+    <tr>
+      <th>4175</th>
+      <td>F</td>
+      <td>0.625</td>
+      <td>0.485</td>
+      <td>0.150</td>
+      <td>1.0945</td>
+      <td>10</td>
+    </tr>
+    <tr>
+      <th>4176</th>
+      <td>M</td>
+      <td>0.710</td>
+      <td>0.555</td>
+      <td>0.195</td>
+      <td>1.9485</td>
+      <td>12</td>
+    </tr>
+  </tbody>
+</table>
+<p>我们可以看到，数据截断为14行，保留了小数点后4位小数作为精度，和我们刚刚设置的precision=4是一样的</p>
+<h3 id="实用pandas中testing模块构建测试数据">2. 实用pandas中testing模块构建测试数据</h3>
+<p>通过pandas.util.testing提供的方法，我们可以很容易的通过几行代码就构建出一个简单的测试数据类型，比如我们现在构建一个DataTime类型的数据，<br>
+时间间隔为月：</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token keyword">import</span> pandas<span class="token punctuation">.</span>util<span class="token punctuation">.</span>testing <span class="token keyword">as</span> tm
+tm<span class="token punctuation">.</span>N<span class="token punctuation">,</span> tm<span class="token punctuation">.</span>K <span class="token operator">=</span> <span class="token number">15</span><span class="token punctuation">,</span> <span class="token number">3</span>         <span class="token comment"># 规定行和列</span>
+
+<span class="token keyword">import</span> numpy <span class="token keyword">as</span> np
+np<span class="token punctuation">.</span>random<span class="token punctuation">.</span>seed<span class="token punctuation">(</span><span class="token number">444</span><span class="token punctuation">)</span>
+
+tm<span class="token punctuation">.</span>makeTimeDataFrame<span class="token punctuation">(</span>freq<span class="token operator">=</span><span class="token string">'M'</span><span class="token punctuation">)</span><span class="token punctuation">.</span>head<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment"># 设置时间间隔为月</span>
+<span class="token comment"># tm.makeTimeDataFrame(freq='D').head()  设置时间间隔为天</span>
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>A</th>
+      <th>B</th>
+      <th>C</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>2000-01-31</th>
+      <td>0.3574</td>
+      <td>-0.8804</td>
+      <td>0.2669</td>
+    </tr>
+    <tr>
+      <th>2000-02-29</th>
+      <td>0.3775</td>
+      <td>0.1526</td>
+      <td>-0.4803</td>
+    </tr>
+    <tr>
+      <th>2000-03-31</th>
+      <td>1.3823</td>
+      <td>0.2503</td>
+      <td>0.3008</td>
+    </tr>
+    <tr>
+      <th>2000-04-30</th>
+      <td>1.1755</td>
+      <td>0.0785</td>
+      <td>-0.1791</td>
+    </tr>
+    <tr>
+      <th>2000-05-31</th>
+      <td>-0.9393</td>
+      <td>-0.9039</td>
+      <td>1.1837</td>
+    </tr>
+  </tbody>
+</table>
+<p>瞎生成一组乱七八糟的数据：</p>
+<pre class=" language-python"><code class="prism  language-python">tm<span class="token punctuation">.</span>makeDataFrame<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>head<span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>A</th>
+      <th>B</th>
+      <th>C</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>nTLGGTiRHF</th>
+      <td>-0.6228</td>
+      <td>0.6459</td>
+      <td>0.1251</td>
+    </tr>
+    <tr>
+      <th>WPBRn9jtsR</th>
+      <td>-0.3187</td>
+      <td>-0.8091</td>
+      <td>1.1501</td>
+    </tr>
+    <tr>
+      <th>7B3wWfvuDA</th>
+      <td>-1.9872</td>
+      <td>-1.0795</td>
+      <td>0.2987</td>
+    </tr>
+    <tr>
+      <th>yJ0BTjehH1</th>
+      <td>0.8802</td>
+      <td>0.7403</td>
+      <td>-1.2154</td>
+    </tr>
+    <tr>
+      <th>0luaYUYvy1</th>
+      <td>-0.9320</td>
+      <td>1.2912</td>
+      <td>-0.2907</td>
+    </tr>
+  </tbody>
+</table>
+<p>关于可以随机生成的数据类型, 一共大概有30多种，大家如果感兴趣可以多试试：</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token punctuation">[</span>i <span class="token keyword">for</span> i <span class="token keyword">in</span> <span class="token builtin">dir</span><span class="token punctuation">(</span>tm<span class="token punctuation">)</span> <span class="token keyword">if</span> i<span class="token punctuation">.</span>startswith<span class="token punctuation">(</span><span class="token string">'make'</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+</code></pre>
+<pre><code>['makeBoolIndex',
+ 'makeCategoricalIndex',
+ 'makeCustomDataframe',
+ 'makeCustomIndex',
+ 'makeDataFrame',
+ 'makeDateIndex',
+ 'makeFloatIndex',
+ 'makeFloatSeries',
+ 'makeIntIndex',
+ 'makeIntervalIndex',
+ 'makeMissingCustomDataframe',
+ 'makeMissingDataframe',
+ 'makeMixedDataFrame',
+ 'makeMultiIndex',
+ 'makeObjectSeries',
+ 'makePanel',
+ 'makePeriodFrame',
+ 'makePeriodIndex',
+ 'makePeriodPanel',
+ 'makePeriodSeries',
+ 'makeRangeIndex',
+ 'makeStringIndex',
+ 'makeStringSeries',
+ 'makeTimeDataFrame',
+ 'makeTimeSeries',
+ 'makeTimedeltaIndex',
+ 'makeUIntIndex',
+ 'makeUnicodeIndex']
+</code></pre>
+<p>这样我们如果有测试的需求，会很容易地构建相对应的假数据来测试。</p>
+<h3 id="巧用accessor接口方法">3. 巧用accessor接口方法</h3>
+<p>accessor（访问器） 具体就是类似getter和setter，当然，Python里面不提倡存在setter和getter方法，但是这样可以便于大家理解，pandas Series类型有3类accessor：</p>
+<pre class=" language-python"><code class="prism  language-python">pd<span class="token punctuation">.</span>Series<span class="token punctuation">.</span>_accessors
+</code></pre>
+<pre><code>{'cat', 'dt', 'str'}
+</code></pre>
+<ul>
+<li>.cat用于分类数据，</li>
+<li>.str用于字符串（对象）数据，</li>
+<li>.dt用于类似日期时间的数据。</li>
+</ul>
+<p>让我们从.str开始看：假设现在我们有一些原始的城市/州/ 邮编数据作为Dataframe的一个字段：</p>
+<pre class=" language-python"><code class="prism  language-python">addr <span class="token operator">=</span> pd<span class="token punctuation">.</span>Series<span class="token punctuation">(</span><span class="token punctuation">[</span>
+    <span class="token string">'Washington, D.C. 20003'</span><span class="token punctuation">,</span>
+    <span class="token string">'Brooklyn, NY 11211-1755'</span><span class="token punctuation">,</span>
+    <span class="token string">'Omaha, NE 68154'</span><span class="token punctuation">,</span>
+    <span class="token string">'Pittsburgh, PA 15211'</span>
+<span class="token punctuation">]</span><span class="token punctuation">)</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">addr<span class="token punctuation">.</span><span class="token builtin">str</span><span class="token punctuation">.</span>upper<span class="token punctuation">(</span><span class="token punctuation">)</span>  <span class="token comment"># 因为字符串方法是矢量化的，这意味着它们在没有显式for循环的情况下对整个数组进行操作</span>
+</code></pre>
+<pre><code>0     WASHINGTON, D.C. 20003
+1    BROOKLYN, NY 11211-1755
+2            OMAHA, NE 68154
+3       PITTSBURGH, PA 15211
+dtype: object
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">addr<span class="token punctuation">.</span><span class="token builtin">str</span><span class="token punctuation">.</span>count<span class="token punctuation">(</span>r<span class="token string">'\d'</span><span class="token punctuation">)</span>  <span class="token comment"># 查看邮编有几位</span>
+</code></pre>
+<pre><code>0    5
+1    9
+2    5
+3    5
+dtype: int64
+</code></pre>
+<p>如果我们想把每一行分成城市，州，邮编分开，可以用正则；</p>
+<pre class=" language-python"><code class="prism  language-python">regex <span class="token operator">=</span> <span class="token punctuation">(</span>r<span class="token string">'(?P&lt;city&gt;[A-Za-z ]+), '</span>      <span class="token comment"># One or more letters</span>
+         r<span class="token string">'(?P&lt;state&gt;[A-Z]{2}) '</span>      <span class="token comment"># 2 capital letters</span>
+         r<span class="token string">'(?P&lt;zip&gt;\d{5}(?:-\d{4})?)'</span><span class="token punctuation">)</span>  <span class="token comment"># Optional 4-digit extension</span>
+
+addr<span class="token punctuation">.</span><span class="token builtin">str</span><span class="token punctuation">.</span>replace<span class="token punctuation">(</span><span class="token string">'.'</span><span class="token punctuation">,</span> <span class="token string">''</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token builtin">str</span><span class="token punctuation">.</span>extract<span class="token punctuation">(</span>regex<span class="token punctuation">)</span>
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>city</th>
+      <th>state</th>
+      <th>zip</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Washington</td>
+      <td>DC</td>
+      <td>20003</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Brooklyn</td>
+      <td>NY</td>
+      <td>11211-1755</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Omaha</td>
+      <td>NE</td>
+      <td>68154</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Pittsburgh</td>
+      <td>PA</td>
+      <td>15211</td>
+    </tr>
+  </tbody>
+</table>
+<p>第二个访问器.dt用于类似日期时间的数据。它其实属于Pandas的DatetimeIndex，如果在Series上调用，它首先转换为DatetimeIndex</p>
+<pre class=" language-python"><code class="prism  language-python">daterng <span class="token operator">=</span> pd<span class="token punctuation">.</span>Series<span class="token punctuation">(</span>pd<span class="token punctuation">.</span>date_range<span class="token punctuation">(</span><span class="token string">'2018'</span><span class="token punctuation">,</span> periods<span class="token operator">=</span><span class="token number">9</span><span class="token punctuation">,</span> freq<span class="token operator">=</span><span class="token string">'Q'</span><span class="token punctuation">)</span><span class="token punctuation">)</span>  <span class="token comment"># 时间间隔为季度</span>
+daterng
+</code></pre>
+<pre><code>0   2018-03-31
+1   2018-06-30
+2   2018-09-30
+3   2018-12-31
+4   2019-03-31
+5   2019-06-30
+6   2019-09-30
+7   2019-12-31
+8   2020-03-31
+dtype: datetime64[ns]
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">daterng<span class="token punctuation">.</span>dt<span class="token punctuation">.</span>day_name<span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<pre><code>0    Saturday
+1    Saturday
+2      Sunday
+3      Monday
+4      Sunday
+5      Sunday
+6      Monday
+7     Tuesday
+8     Tuesday
+dtype: object
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">daterng<span class="token punctuation">[</span>daterng<span class="token punctuation">.</span>dt<span class="token punctuation">.</span>quarter <span class="token operator">&gt;</span> <span class="token number">2</span><span class="token punctuation">]</span>  <span class="token comment"># 查看2019年第3季度和第4季度</span>
+</code></pre>
+<pre><code>2   2018-09-30
+3   2018-12-31
+6   2019-09-30
+7   2019-12-31
+dtype: datetime64[ns]
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">daterng<span class="token punctuation">[</span>daterng<span class="token punctuation">.</span>dt<span class="token punctuation">.</span>is_year_end<span class="token punctuation">]</span>  <span class="token comment">#查看年末的一天</span>
+</code></pre>
+<pre><code>3   2018-12-31
+7   2019-12-31
+dtype: datetime64[ns]
+</code></pre>
+<p>最后有关.cat访问器我们会在第5个技巧中提到</p>
+<h3 id="合并其他列拼接datetimeindex">4. 合并其他列拼接DatetimeIndex</h3>
+<p>现在先让我们构建一个包含时间类型数据的Dataframe：</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token keyword">from</span> itertools <span class="token keyword">import</span> product
+datecols <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token string">'year'</span><span class="token punctuation">,</span> <span class="token string">'month'</span><span class="token punctuation">,</span> <span class="token string">'day'</span><span class="token punctuation">]</span>
+
+df <span class="token operator">=</span> pd<span class="token punctuation">.</span>DataFrame<span class="token punctuation">(</span><span class="token builtin">list</span><span class="token punctuation">(</span>product<span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token number">2017</span><span class="token punctuation">,</span> <span class="token number">2016</span><span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                  columns<span class="token operator">=</span>datecols<span class="token punctuation">)</span>
+df<span class="token punctuation">[</span><span class="token string">'data'</span><span class="token punctuation">]</span> <span class="token operator">=</span> np<span class="token punctuation">.</span>random<span class="token punctuation">.</span>randn<span class="token punctuation">(</span><span class="token builtin">len</span><span class="token punctuation">(</span>df<span class="token punctuation">)</span><span class="token punctuation">)</span>
+df
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>year</th>
+      <th>month</th>
+      <th>day</th>
+      <th>data</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2017</td>
+      <td>1</td>
+      <td>1</td>
+      <td>-0.0767</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2017</td>
+      <td>1</td>
+      <td>2</td>
+      <td>-1.2798</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2017</td>
+      <td>1</td>
+      <td>3</td>
+      <td>0.4032</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2017</td>
+      <td>2</td>
+      <td>1</td>
+      <td>1.2377</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2017</td>
+      <td>2</td>
+      <td>2</td>
+      <td>-0.2060</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>2017</td>
+      <td>2</td>
+      <td>3</td>
+      <td>0.6187</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>2016</td>
+      <td>1</td>
+      <td>1</td>
+      <td>2.3786</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>2016</td>
+      <td>1</td>
+      <td>2</td>
+      <td>-0.4730</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>2016</td>
+      <td>1</td>
+      <td>3</td>
+      <td>-2.1505</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>2016</td>
+      <td>2</td>
+      <td>1</td>
+      <td>-0.6340</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>2016</td>
+      <td>2</td>
+      <td>2</td>
+      <td>0.7964</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>2016</td>
+      <td>2</td>
+      <td>3</td>
+      <td>0.0005</td>
+    </tr>
+  </tbody>
+</table>
+<p>我们可以发现year，month，day是分开的三列，我们如果想要把它们合并为完整的时间并作为df的索引，可以这么做:</p>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">.</span>index <span class="token operator">=</span> pd<span class="token punctuation">.</span>to_datetime<span class="token punctuation">(</span>df<span class="token punctuation">[</span>datecols<span class="token punctuation">]</span><span class="token punctuation">)</span>
+df<span class="token punctuation">.</span>head<span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>year</th>
+      <th>month</th>
+      <th>day</th>
+      <th>data</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>2017-01-01</th>
+      <td>2017</td>
+      <td>1</td>
+      <td>1</td>
+      <td>-0.0767</td>
+    </tr>
+    <tr>
+      <th>2017-01-02</th>
+      <td>2017</td>
+      <td>1</td>
+      <td>2</td>
+      <td>-1.2798</td>
+    </tr>
+    <tr>
+      <th>2017-01-03</th>
+      <td>2017</td>
+      <td>1</td>
+      <td>3</td>
+      <td>0.4032</td>
+    </tr>
+    <tr>
+      <th>2017-02-01</th>
+      <td>2017</td>
+      <td>2</td>
+      <td>1</td>
+      <td>1.2377</td>
+    </tr>
+    <tr>
+      <th>2017-02-02</th>
+      <td>2017</td>
+      <td>2</td>
+      <td>2</td>
+      <td>-0.2060</td>
+    </tr>
+  </tbody>
+</table>
+<p>我们可以扔掉没用的列并把这个df压缩为Series：</p>
+<pre class=" language-python"><code class="prism  language-python">df <span class="token operator">=</span> df<span class="token punctuation">.</span>drop<span class="token punctuation">(</span>datecols<span class="token punctuation">,</span> axis<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">.</span>squeeze<span class="token punctuation">(</span><span class="token punctuation">)</span>
+df<span class="token punctuation">.</span>head<span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<pre><code>2017-01-01   -0.0767
+2017-01-02   -1.2798
+2017-01-03    0.4032
+2017-02-01    1.2377
+2017-02-02   -0.2060
+Name: data, dtype: float64
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token builtin">type</span><span class="token punctuation">(</span>df<span class="token punctuation">)</span>
+</code></pre>
+<pre><code>pandas.core.series.Series
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">.</span>index<span class="token punctuation">.</span>dtype_str
+</code></pre>
+<pre><code>'datetime64[ns]'
+</code></pre>
+<h3 id="使用分类数据（categorical-data）节省时间和空间">5. 使用分类数据（Categorical Data）节省时间和空间</h3>
+<p>刚刚我们在第3个技巧的时候提到了访问器，现在让我们来看最后一个.cat</p>
+<p>pandas中Categorical这个数据类型非常强大，通过类型转换可以让我们节省变量在内存占用的空间，提高运算速度，不过有关具体的pandas加速实战，我会在<br>
+下一期说，现在让我们来看一个小栗子：</p>
+<pre class=" language-python"><code class="prism  language-python">colors <span class="token operator">=</span> pd<span class="token punctuation">.</span>Series<span class="token punctuation">(</span><span class="token punctuation">[</span>
+    <span class="token string">'periwinkle'</span><span class="token punctuation">,</span>
+    <span class="token string">'mint green'</span><span class="token punctuation">,</span>
+    <span class="token string">'burnt orange'</span><span class="token punctuation">,</span>
+    <span class="token string">'periwinkle'</span><span class="token punctuation">,</span>
+    <span class="token string">'burnt orange'</span><span class="token punctuation">,</span>
+    <span class="token string">'rose'</span><span class="token punctuation">,</span>
+    <span class="token string">'rose'</span><span class="token punctuation">,</span>
+    <span class="token string">'mint green'</span><span class="token punctuation">,</span>
+    <span class="token string">'rose'</span><span class="token punctuation">,</span>
+    <span class="token string">'navy'</span>
+<span class="token punctuation">]</span><span class="token punctuation">)</span>
+
+<span class="token keyword">import</span> sys
+colors<span class="token punctuation">.</span><span class="token builtin">apply</span><span class="token punctuation">(</span>sys<span class="token punctuation">.</span>getsizeof<span class="token punctuation">)</span>
+
+</code></pre>
+<pre><code>0    59
+1    59
+2    61
+3    59
+4    61
+5    53
+6    53
+7    59
+8    53
+9    53
+dtype: int64
+</code></pre>
+<p>我们首先创建了一个Series，填充了各种颜色，接着查看了每个地址对应的颜色所占内存的大小</p>
+<blockquote>
+<p><strong>注意这里我们使用sys.getsizeof()来获取占内存大小，但是实际上空格也是占内存的，sys.getsizeof(’’)返回的是49bytes</strong></p>
+</blockquote>
+<p>接下来我们想把每种颜色用占内存更少的数字来表示（机器学习种非常常见），这样可以减少占用的内存，首先让我们创建一个mapper字典，给每一种颜色指定<br>
+一个数字</p>
+<pre class=" language-python"><code class="prism  language-python">mapper <span class="token operator">=</span> <span class="token punctuation">{</span>v<span class="token punctuation">:</span> k <span class="token keyword">for</span> k<span class="token punctuation">,</span> v <span class="token keyword">in</span> <span class="token builtin">enumerate</span><span class="token punctuation">(</span>colors<span class="token punctuation">.</span>unique<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">}</span>
+mapper
+</code></pre>
+<pre><code>{'periwinkle': 0, 'mint green': 1, 'burnt orange': 2, 'rose': 3, 'navy': 4}
+</code></pre>
+<p>接着我们把刚才的colors数组转化为int类型：</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># 也可以通过 pd.factorize(colors)[0] 实现</span>
+as_int <span class="token operator">=</span> colors<span class="token punctuation">.</span><span class="token builtin">map</span><span class="token punctuation">(</span>mapper<span class="token punctuation">)</span>
+as_int
+</code></pre>
+<pre><code>0    0
+1    1
+2    2
+3    0
+4    2
+5    3
+6    3
+7    1
+8    3
+9    4
+dtype: int64
+</code></pre>
+<p>再让我们看一下占用的内存：</p>
+<pre class=" language-python"><code class="prism  language-python">as_int<span class="token punctuation">.</span><span class="token builtin">apply</span><span class="token punctuation">(</span>sys<span class="token punctuation">.</span>getsizeof<span class="token punctuation">)</span>
+</code></pre>
+<pre><code>0    24
+1    28
+2    28
+3    24
+4    28
+5    28
+6    28
+7    28
+8    28
+9    28
+dtype: int64
+</code></pre>
+<p>现在可以观察到我们的内存占用的空间几乎是之前的一半，其实，刚刚我们做的正是模拟Categorical Data的转化原理。现在让我们直接调用一下：</p>
+<pre class=" language-python"><code class="prism  language-python">colors<span class="token punctuation">.</span>memory_usage<span class="token punctuation">(</span>index<span class="token operator">=</span><span class="token boolean">False</span><span class="token punctuation">,</span> deep<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>
+
+Out<span class="token punctuation">:</span><span class="token number">650</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">colors<span class="token punctuation">.</span>astype<span class="token punctuation">(</span><span class="token string">'category'</span><span class="token punctuation">)</span><span class="token punctuation">.</span>memory_usage<span class="token punctuation">(</span>index<span class="token operator">=</span><span class="token boolean">False</span><span class="token punctuation">,</span> deep<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>
+
+Out<span class="token punctuation">:</span> <span class="token number">495</span>
+</code></pre>
+<p>大家可能感觉节省的空间并不是非常大对不对？ 因为目前我们这个数据根本不是真实场景，我们仅仅把数据容量增加10倍，现在再让我们看看效果：</p>
+<pre class=" language-python"><code class="prism  language-python">manycolors <span class="token operator">=</span> colors<span class="token punctuation">.</span>repeat<span class="token punctuation">(</span><span class="token number">10</span><span class="token punctuation">)</span>
+<span class="token builtin">len</span><span class="token punctuation">(</span>manycolors<span class="token punctuation">)</span> <span class="token operator">/</span> manycolors<span class="token punctuation">.</span>nunique<span class="token punctuation">(</span><span class="token punctuation">)</span>  <span class="token comment"># Much greater than 2.0x </span>
+
+Out<span class="token punctuation">:</span><span class="token number">20.0</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">f<span class="token string">"Not using category : { manycolors.memory_usage(index=False, deep=True)}"</span>
+</code></pre>
+<pre><code>'Not using category : 6500'
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">f<span class="token string">"Using category : { manycolors.astype('category').memory_usage(index=False, deep=True)}"</span>
+</code></pre>
+<pre><code>'Using category : 585'
+</code></pre>
+<p>这回内存的占用量差距明显就出来了，现在让我们用.cat来简化一下刚刚的工作：</p>
+<pre class=" language-python"><code class="prism  language-python">new_colors <span class="token operator">=</span> colors<span class="token punctuation">.</span>astype<span class="token punctuation">(</span><span class="token string">'category'</span><span class="token punctuation">)</span>
+new_colors
+</code></pre>
+<pre><code>0      periwinkle
+1      mint green
+2    burnt orange
+3      periwinkle
+4    burnt orange
+5            rose
+6            rose
+7      mint green
+8            rose
+9            navy
+dtype: category
+Categories (5, object): [burnt orange, mint green, navy, periwinkle, rose]
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">new_colors<span class="token punctuation">.</span>cat<span class="token punctuation">.</span>categories   <span class="token comment"># 可以使用.cat.categories查看代表的颜色</span>
+</code></pre>
+<pre><code>Index(['burnt orange', 'mint green', 'navy', 'periwinkle', 'rose'], dtype='object')
+</code></pre>
+<p>现在让我们查看把颜色代表的数字：</p>
+<pre class=" language-python"><code class="prism  language-python">new_colors<span class="token punctuation">.</span>cat<span class="token punctuation">.</span>codes
+</code></pre>
+<pre><code>0    3
+1    1
+2    0
+3    3
+4    0
+5    4
+6    4
+7    1
+8    4
+9    2
+dtype: int8
+</code></pre>
+<p>我们如果不满意顺序也可以从新排序：</p>
+<pre class=" language-python"><code class="prism  language-python">new_colors<span class="token punctuation">.</span>cat<span class="token punctuation">.</span>reorder_categories<span class="token punctuation">(</span>mapper<span class="token punctuation">)</span><span class="token punctuation">.</span>cat<span class="token punctuation">.</span>codes
+</code></pre>
+<pre><code>0    0
+1    1
+2    2
+3    0
+4    2
+5    3
+6    3
+7    1
+8    3
+9    4
+dtype: int8
+</code></pre>
+<p>有关cat其他的方法，我们还是可以通过遍历dir来查看：</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token punctuation">[</span>i <span class="token keyword">for</span> i <span class="token keyword">in</span> <span class="token builtin">dir</span><span class="token punctuation">(</span>new_colors<span class="token punctuation">.</span>cat<span class="token punctuation">)</span> <span class="token keyword">if</span> <span class="token operator">not</span> i<span class="token punctuation">.</span>startswith<span class="token punctuation">(</span><span class="token string">'_'</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+</code></pre>
+<pre><code>['add_categories',
+ 'as_ordered',
+ 'as_unordered',
+ 'categories',
+ 'codes',
+ 'ordered',
+ 'remove_categories',
+ 'remove_unused_categories',
+ 'rename_categories',
+ 'reorder_categories',
+ 'set_categories']
+</code></pre>
+<blockquote>
+<p>Categorical 数据通常不太灵活，比如我们不能直接在new_colors上新增一个新的颜色，要首先通过<br>
+.add_categories来添加</p>
+</blockquote>
+<pre class=" language-python"><code class="prism  language-python">ccolors<span class="token punctuation">.</span>iloc<span class="token punctuation">[</span><span class="token number">5</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">'a new color'</span>
+</code></pre>
+<pre><code>---------------------------------------------------------------------------
+
+NameError                                 Traceback (most recent call last)
+
+&lt;ipython-input-36-1766a795336d&gt; in &lt;module&gt;()
+----&gt; 1 ccolors.iloc[5] = 'a new color'
+
+
+NameError: name 'ccolors' is not defined
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">new_colors <span class="token operator">=</span> new_colors<span class="token punctuation">.</span>cat<span class="token punctuation">.</span>add_categories<span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token string">'a new color'</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">new_colors<span class="token punctuation">.</span>iloc<span class="token punctuation">[</span><span class="token number">5</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">'a new color'</span>  <span class="token comment"># 不会报错</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">new_colors<span class="token punctuation">.</span>values  <span class="token comment"># 成功添加</span>
+</code></pre>
+<h3 id="利用mapping巧妙实现映射">6. 利用Mapping巧妙实现映射</h3>
+<p>假设现在我们有存贮国家的一组数据，和一组用来映射国家所对应的大洲的数据：</p>
+<pre class=" language-python"><code class="prism  language-python">countries <span class="token operator">=</span> pd<span class="token punctuation">.</span>Series<span class="token punctuation">(</span><span class="token punctuation">[</span>
+    <span class="token string">'United States'</span><span class="token punctuation">,</span>
+    <span class="token string">'Canada'</span><span class="token punctuation">,</span>
+    <span class="token string">'Mexico'</span><span class="token punctuation">,</span>
+    <span class="token string">'Belgium'</span><span class="token punctuation">,</span>
+    <span class="token string">'United Kingdom'</span><span class="token punctuation">,</span>
+    <span class="token string">'Thailand'</span>
+<span class="token punctuation">]</span><span class="token punctuation">)</span>
+
+groups <span class="token operator">=</span> <span class="token punctuation">{</span>
+    <span class="token string">'North America'</span><span class="token punctuation">:</span> <span class="token punctuation">(</span><span class="token string">'United States'</span><span class="token punctuation">,</span> <span class="token string">'Canada'</span><span class="token punctuation">,</span> <span class="token string">'Mexico'</span><span class="token punctuation">,</span> <span class="token string">'Greenland'</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token string">'Europe'</span><span class="token punctuation">:</span> <span class="token punctuation">(</span><span class="token string">'France'</span><span class="token punctuation">,</span> <span class="token string">'Germany'</span><span class="token punctuation">,</span> <span class="token string">'United Kingdom'</span><span class="token punctuation">,</span> <span class="token string">'Belgium'</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>我们可以通过下面的方法来实现简单的映射：</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token keyword">from</span> typing <span class="token keyword">import</span> Any
+
+<span class="token keyword">def</span> <span class="token function">membership_map</span><span class="token punctuation">(</span>s<span class="token punctuation">:</span> pd<span class="token punctuation">.</span>Series<span class="token punctuation">,</span> groups<span class="token punctuation">:</span> <span class="token builtin">dict</span><span class="token punctuation">,</span>
+                   fillvalue<span class="token punctuation">:</span> Any<span class="token operator">=</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">&gt;</span> pd<span class="token punctuation">.</span>Series<span class="token punctuation">:</span>
+    <span class="token comment"># Reverse &amp; expand the dictionary key-value pairs</span>
+    groups <span class="token operator">=</span> <span class="token punctuation">{</span>x<span class="token punctuation">:</span> k <span class="token keyword">for</span> k<span class="token punctuation">,</span> v <span class="token keyword">in</span> groups<span class="token punctuation">.</span>items<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">for</span> x <span class="token keyword">in</span> v<span class="token punctuation">}</span>
+    <span class="token keyword">return</span> s<span class="token punctuation">.</span><span class="token builtin">map</span><span class="token punctuation">(</span>groups<span class="token punctuation">)</span><span class="token punctuation">.</span>fillna<span class="token punctuation">(</span>fillvalue<span class="token punctuation">)</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"> membership_map<span class="token punctuation">(</span>countries<span class="token punctuation">,</span> groups<span class="token punctuation">,</span> fillvalue<span class="token operator">=</span><span class="token string">'other'</span><span class="token punctuation">)</span>
+</code></pre>
+<p>很简单对不对，现在让我们看一下最关键的一行代码，groups = {x: k for k, v in groups.items() for x in v}，这个是我之前提到过的字典推导式：</p>
+<pre class=" language-python"><code class="prism  language-python">test <span class="token operator">=</span> <span class="token builtin">dict</span><span class="token punctuation">(</span><span class="token builtin">enumerate</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token string">'ab'</span><span class="token punctuation">,</span> <span class="token string">'cd'</span><span class="token punctuation">,</span> <span class="token string">'xyz'</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>x<span class="token punctuation">:</span> k <span class="token keyword">for</span> k<span class="token punctuation">,</span> v <span class="token keyword">in</span> test<span class="token punctuation">.</span>items<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">for</span> x <span class="token keyword">in</span> v<span class="token punctuation">}</span>
+</code></pre>
+<h3 id="压缩pandas对象">7. 压缩pandas对象</h3>
+<pre class=" language-python"><code class="prism  language-python">如果你的pandas版本大于<span class="token number">0.21</span><span class="token punctuation">.</span><span class="token number">0</span>，那么都可以直接把pandas用压缩形式写入，常见的类型有gzip<span class="token punctuation">,</span> bz2<span class="token punctuation">,</span> <span class="token builtin">zip</span>，这里我们直接用刚才鲍鱼的数据集：
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">abalone<span class="token punctuation">.</span>to_json<span class="token punctuation">(</span><span class="token string">'df.json.gz'</span><span class="token punctuation">,</span> orient<span class="token operator">=</span><span class="token string">'records'</span><span class="token punctuation">,</span>lines<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">,</span> compression<span class="token operator">=</span><span class="token string">'gzip'</span><span class="token punctuation">)</span>  <span class="token comment"># 压缩为gz类型</span>
+abalone<span class="token punctuation">.</span>to_json<span class="token punctuation">(</span><span class="token string">'df.json'</span><span class="token punctuation">,</span> orient<span class="token operator">=</span><span class="token string">'records'</span><span class="token punctuation">,</span> lines<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>                        <span class="token comment">#压缩为json</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token keyword">import</span> os<span class="token punctuation">.</span>path
+os<span class="token punctuation">.</span>path<span class="token punctuation">.</span>getsize<span class="token punctuation">(</span><span class="token string">'df.json'</span><span class="token punctuation">)</span> <span class="token operator">/</span> os<span class="token punctuation">.</span>path<span class="token punctuation">.</span>getsize<span class="token punctuation">(</span><span class="token string">'df.json.gz'</span><span class="token punctuation">)</span>  <span class="token comment">#压缩大小差了10倍，还是gz更厉害</span>
+</code></pre>
+<h3 id="源码及github地址">8. 源码及GitHub地址</h3>
+<p>这一期为大家总结了很多pandas实用的小技巧，希望大家喜欢</p>
+<p>我把这一期的ipynb文件和py文件放到了Github上，大家如果想要下载可以点击下面的链接：</p>
+<ul>
+<li>Github仓库地址： <a href="https://github.com/yaozeliang/pandas_share/tree/master/Pandas%E4%B9%8B%E6%97%85_04%20pandas%E8%B6%85%E5%AE%9E%E7%94%A8%E6%8A%80%E5%B7%A7">https://github.com/yaozeliang/pandas_share</a></li>
+</ul>
+<p>这一期就到这里啦，希望大家能够继续支持我，完结，撒花</p>
+
+    </div>
+  </div>
+</body>
+
+</html>
