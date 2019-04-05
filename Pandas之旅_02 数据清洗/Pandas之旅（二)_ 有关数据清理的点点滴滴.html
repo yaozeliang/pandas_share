@@ -1,0 +1,1177 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pandas之旅（二): 有关数据清理的点点滴滴</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__left">
+    <div class="stackedit__toc">
+      
+<ul>
+<li>
+<ul>
+<li><a href="#数据清洗">数据清洗</a></li>
+<li><a href="#有关缺失值的处理">1.有关缺失值的处理</a></li>
+<li><a href="#有关列的处理">2. 有关列的处理</a></li>
+<li><a href="#设置index">3. 设置Index</a></li>
+<li><a href="#总结">总结</a></li>
+</ul>
+</li>
+</ul>
+
+    </div>
+  </div>
+  <div class="stackedit__right">
+    <div class="stackedit__html">
+      <h2 id="数据清洗">数据清洗</h2>
+<p>大家好，这一期我将为大家带来我的pandas学习心得第二期：数据清理。这一步非常重要，一般在获取数据源之后，我们紧接着就要开始这一步，以便为了之后的各种操作，简单来说，我们的目标就是让数据看起来赏心悦目，规规矩矩的，所以我们会对原始的dataframe做一些必要的美容，包括规范命名，去除异常值，重新选择合适的index啊，处理缺失值，统一列的命名等等。</p>
+<p>这一期我会和大家分享一些比较好用常见的清洗方法。首先还是让我们来简单看一下本文将会用到的数据源:</p>
+<ul>
+<li><strong>property_data.csv</strong> 这是一个超小型的房地产行业的数据集，大家会在文章最后找到下载地址。</li>
+</ul>
+<p>这篇文章我会从以下几个方面来和大家分享我的心得体会：</p>
+<ol>
+<li>有关缺失值的处理</li>
+<li>有关列的处理</li>
+<li>设置Index</li>
+<li>源码及数据下载地址</li>
+</ol>
+<h2 id="有关缺失值的处理">1.有关缺失值的处理</h2>
+<p>这里我们会用到 property_data.csv这个数据集，在开始处理缺失值之前，我们可以先话一分钟仔细想想，为什么实际生活中的数据从来是不完整的，原因基本有几个方面：</p>
+<ul>
+<li>用户忘记填写字段</li>
+<li>从旧数据库手动传输时数据丢失</li>
+<li>代码中有bug</li>
+<li>用户不填写非必须字段（比如注册的时候）</li>
+</ul>
+<p>因为这些原因，我每次在处理missing value的时候都会问自己两个基础问题：</p>
+<ol>
+<li>数据集每一列有什么特点？</li>
+<li>我们想要在处理后得到什么类型的数据（int，float，string，boolean）？</li>
+</ol>
+<p>带着这些疑问，我们可以开始了，首先让我们简单读取一下数据，利用head函数看看前5行，如果你还对pandas的基础知识有疑问，可以看看我上一篇文章：<a href="https://segmentfault.com/a/1190000018373808">Pandas之旅（一): 让我们把基础知识一次撸完，申精干货</a></p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token keyword">import</span> pandas <span class="token keyword">as</span> pd
+<span class="token keyword">import</span> numpy <span class="token keyword">as</span> np
+<span class="token keyword">import</span> os
+os<span class="token punctuation">.</span>chdir<span class="token punctuation">(</span><span class="token string">"F:\\Python教程\\segmentfault\\pandas_share\\Pandas之旅_02 数据清洗"</span><span class="token punctuation">)</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># Read csv file into a pandas dataframe</span>
+df <span class="token operator">=</span> pd<span class="token punctuation">.</span>read_csv<span class="token punctuation">(</span><span class="token string">"property_data.csv"</span><span class="token punctuation">)</span>
+
+<span class="token comment"># Take a look at the first few rows</span>
+df<span class="token punctuation">.</span>head<span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>PID</th>
+      <th>ST_NUM</th>
+      <th>ST_NAME</th>
+      <th>OWN_OCCUPIED</th>
+      <th>NUM_BEDROOMS</th>
+      <th>NUM_BATH</th>
+      <th>SQ_FT</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>100001000.0</td>
+      <td>104.0</td>
+      <td>PUTNAM</td>
+      <td>Y</td>
+      <td>3</td>
+      <td>1</td>
+      <td>1000</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>100002000.0</td>
+      <td>197.0</td>
+      <td>LEXINGTON</td>
+      <td>N</td>
+      <td>3</td>
+      <td>1.5</td>
+      <td>--</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>100003000.0</td>
+      <td>NaN</td>
+      <td>LEXINGTON</td>
+      <td>N</td>
+      <td>NaN</td>
+      <td>1</td>
+      <td>850</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>100004000.0</td>
+      <td>201.0</td>
+      <td>BERKELEY</td>
+      <td>12</td>
+      <td>1</td>
+      <td>NaN</td>
+      <td>700</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>NaN</td>
+      <td>203.0</td>
+      <td>BERKELEY</td>
+      <td>Y</td>
+      <td>3</td>
+      <td>2</td>
+      <td>1600</td>
+    </tr>
+  </tbody>
+</table>
+<p>现在让我们看看数据的一些关键列是什么：</p>
+<ul>
+<li>ST_NUM：街道号码</li>
+<li>ST_NAME: 街道名称</li>
+<li>OWN_OCCUPIED: 是否用于自住</li>
+<li>NUM_BEDROOMS：卧室数量</li>
+<li>SQ_FT：面积</li>
+</ul>
+<p>这里可以给大家普及点房地产知识，有的时候房屋用途被明确规定，比如有的房产写的是"owner occupied only "）意思是说如果你买了，那这个房子会成为你的主要住所，不能用于出租之类的，简单理解就是自住</p>
+<p>所以现在我可以自问自答第一个问题:数据集每一列有什么特点？</p>
+<ul>
+<li>ST_NUM：float或int …</li>
+<li>ST_NAME：string</li>
+<li>OWN_OCCUPIED：string … Y（“是”）或N（“否”）</li>
+<li>NUM_BEDROOMS：float或int，数字类型</li>
+<li>SQ_FT：float或int，数字类型</li>
+</ul>
+<h3 id="规范的缺失值标记">1.1 规范的缺失值标记</h3>
+<p>现在让我们关注ST_NUM这一列：</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># Looking at the ST_NUM column</span>
+df<span class="token punctuation">[</span><span class="token string">'ST_NUM'</span><span class="token punctuation">]</span>
+</code></pre>
+<pre><code>0    104.0
+1    197.0
+2      NaN
+3    201.0
+4    203.0
+5    207.0
+6      NaN
+7    213.0
+8    215.0
+Name: ST_NUM, dtype: float64
+</code></pre>
+<p>如果想查看该列的缺失值情况，我们可以利用isnull（）方法，如果出现缺失值，会返回True，反之返回false</p>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">[</span><span class="token string">'ST_NUM'</span><span class="token punctuation">]</span><span class="token punctuation">.</span>isnull<span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<pre><code>0    False
+1    False
+2     True
+3    False
+4    False
+5    False
+6     True
+7    False
+8    False
+Name: ST_NUM, dtype: bool
+</code></pre>
+<p>但是其实如果我们打开csv文件，你会发现第3行是空白，还有一行在该列显示的是NA，所以结论已经有了：在pandas里表示缺省值的符号及时NA,换句话说，如果我们要表示缺省值，标准写法是NA</p>
+<p><img src="/img/bVbpxC1" alt="clipboard.png"></p>
+<h3 id="不规范的缺失值标记">1.2 不规范的缺失值标记</h3>
+<p>同样的，这回让我们关注一下NUM_BEDROOMS这一列，我们发现出现了4种类型的表达缺省值的标记：</p>
+<ul>
+<li>n/a</li>
+<li>NA</li>
+<li>—</li>
+<li>na</li>
+</ul>
+<p><img src="/img/bVbpxC2" alt="clipboard.png"></p>
+<p>通过刚才的实践，我们已经确定NA是pandas可以识别的，那么其他的符号呢，现在让我们来测试一下</p>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">[</span><span class="token string">'NUM_BEDROOMS'</span><span class="token punctuation">]</span>
+</code></pre>
+<pre><code>0      3
+1      3
+2    NaN
+3      1
+4      3
+5    NaN
+6      2
+7      1
+8     na
+Name: NUM_BEDROOMS, dtype: object
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">[</span><span class="token string">'NUM_BEDROOMS'</span><span class="token punctuation">]</span><span class="token punctuation">.</span>isnull<span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<pre><code>0    False
+1    False
+2     True
+3    False
+4    False
+5     True
+6    False
+7    False
+8    False
+Name: NUM_BEDROOMS, dtype: bool
+</code></pre>
+<p>可以看到pandas识别了n/a 和NA两种符号，但是接下来我们要考虑一个问题，假设你是房地产公司的地区总经理，你每周会收到不同地区的负责人提交的表格，<br>
+这些人中有的喜欢用–表示空白值，有的人喜欢用na，那应该怎么办？</p>
+<p>最简单的方式就是将所有表示空白值的符号统一放在list中，让后让pandas一次性识别:</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># Making a list of missing value types</span>
+missing_values <span class="token operator">=</span>  <span class="token punctuation">[</span><span class="token string">"na"</span><span class="token punctuation">,</span> <span class="token string">"--"</span><span class="token punctuation">]</span>
+df <span class="token operator">=</span> pd<span class="token punctuation">.</span>read_csv<span class="token punctuation">(</span><span class="token string">"property_data.csv"</span><span class="token punctuation">,</span> na_values <span class="token operator">=</span> missing_values<span class="token punctuation">)</span>
+</code></pre>
+<p>现在我们来看看到底发生了什么？</p>
+<pre class=" language-python"><code class="prism  language-python">df
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>PID</th>
+      <th>ST_NUM</th>
+      <th>ST_NAME</th>
+      <th>OWN_OCCUPIED</th>
+      <th>NUM_BEDROOMS</th>
+      <th>NUM_BATH</th>
+      <th>SQ_FT</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>100001000.0</td>
+      <td>104.0</td>
+      <td>PUTNAM</td>
+      <td>Y</td>
+      <td>3.0</td>
+      <td>1</td>
+      <td>1000.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>100002000.0</td>
+      <td>197.0</td>
+      <td>LEXINGTON</td>
+      <td>N</td>
+      <td>3.0</td>
+      <td>1.5</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>100003000.0</td>
+      <td>NaN</td>
+      <td>LEXINGTON</td>
+      <td>N</td>
+      <td>NaN</td>
+      <td>1</td>
+      <td>850.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>100004000.0</td>
+      <td>201.0</td>
+      <td>BERKELEY</td>
+      <td>12</td>
+      <td>1.0</td>
+      <td>NaN</td>
+      <td>700.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>NaN</td>
+      <td>203.0</td>
+      <td>BERKELEY</td>
+      <td>Y</td>
+      <td>3.0</td>
+      <td>2</td>
+      <td>1600.0</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>100006000.0</td>
+      <td>207.0</td>
+      <td>BERKELEY</td>
+      <td>Y</td>
+      <td>NaN</td>
+      <td>1</td>
+      <td>800.0</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>100007000.0</td>
+      <td>NaN</td>
+      <td>WASHINGTON</td>
+      <td>NaN</td>
+      <td>2.0</td>
+      <td>HURLEY</td>
+      <td>950.0</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>100008000.0</td>
+      <td>213.0</td>
+      <td>TREMONT</td>
+      <td>Y</td>
+      <td>1.0</td>
+      <td>1</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>100009000.0</td>
+      <td>215.0</td>
+      <td>TREMONT</td>
+      <td>Y</td>
+      <td>NaN</td>
+      <td>2</td>
+      <td>1800.0</td>
+    </tr>
+  </tbody>
+</table>
+<p>我们可以发现只要missing_value中记录的表达空白值的符号，全部变成了规整的NaN</p>
+<h3 id="类型不一致的异常值">1.3 类型不一致的异常值</h3>
+<p>刚刚我们已经简单了解了在pandas中如何处理缺失值的，还有一种情况，让我们来看OWN_OCCUPIED这一列，这一列的答案只能是Y,N 但是我们发现数据集意外地出现了12，属于类型不对称</p>
+<p><img src="/img/bVbpxC4" alt="clipboard.png"></p>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">[</span><span class="token string">'OWN_OCCUPIED'</span><span class="token punctuation">]</span><span class="token punctuation">.</span>isnull<span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<pre><code>0    False
+1    False
+2    False
+3    False
+4    False
+5    False
+6     True
+7    False
+8    False
+Name: OWN_OCCUPIED, dtype: bool
+</code></pre>
+<p>现在我们发现12是异常值，因为它是类型错误，所以我们可以简单通过下面这个方法来检测，</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># Detecting numbers </span>
+cnt<span class="token operator">=</span><span class="token number">0</span>
+<span class="token keyword">for</span> row <span class="token keyword">in</span> df<span class="token punctuation">[</span><span class="token string">'OWN_OCCUPIED'</span><span class="token punctuation">]</span><span class="token punctuation">:</span>
+    <span class="token keyword">try</span><span class="token punctuation">:</span>
+        <span class="token builtin">int</span><span class="token punctuation">(</span>row<span class="token punctuation">)</span>
+        df<span class="token punctuation">.</span>loc<span class="token punctuation">[</span>cnt<span class="token punctuation">,</span> <span class="token string">'OWN_OCCUPIED'</span><span class="token punctuation">]</span><span class="token operator">=</span>np<span class="token punctuation">.</span>nan
+    <span class="token keyword">except</span> ValueError<span class="token punctuation">:</span>
+        <span class="token keyword">pass</span>
+    cnt<span class="token operator">+=</span><span class="token number">1</span>
+</code></pre>
+<p>我们这里的策略是：</p>
+<ul>
+<li>循环遍历OWN_OCCUPIED列</li>
+<li>尝试将条目转换为整数</li>
+<li>如果条目可以更改为整数，请输入缺失值</li>
+<li>如果数字不能是整数，我们知道它是一个字符串，所以继续</li>
+</ul>
+<p>这样我们会把OWN_OCCUPIED这一列中所有类型不对的值转化为NaN，现在来看结果：</p>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">[</span><span class="token string">'OWN_OCCUPIED'</span><span class="token punctuation">]</span>
+</code></pre>
+<pre><code>0      Y
+1      N
+2      N
+3    NaN
+4      Y
+5      Y
+6    NaN
+7      Y
+8      Y
+Name: OWN_OCCUPIED, dtype: object
+</code></pre>
+<h3 id="汇总缺失值">1.4 汇总缺失值</h3>
+<p>pandas提供了更为简洁的方式，可以让我们整体了解所有column的空值：</p>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">.</span>isnull<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token builtin">sum</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<pre><code>PID             1
+ST_NUM          2
+ST_NAME         0
+OWN_OCCUPIED    2
+NUM_BEDROOMS    3
+NUM_BATH        1
+SQ_FT           2
+dtype: int64
+</code></pre>
+<p>或者如果我们只想知道数据是否存在空值，那么可以使用以下的命令：</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># Any missing values?</span>
+df<span class="token punctuation">.</span>isnull<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>values<span class="token punctuation">.</span><span class="token builtin">any</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+</code></pre>
+<pre><code>True
+</code></pre>
+<h3 id="替换缺失值">1.5 替换缺失值</h3>
+<p>如果我们想要替换掉缺失值，可以用fillna方法</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># Replace missing values with a number</span>
+df<span class="token punctuation">[</span><span class="token string">'ST_NUM'</span><span class="token punctuation">]</span><span class="token punctuation">.</span>fillna<span class="token punctuation">(</span><span class="token number">125</span><span class="token punctuation">,</span> inplace<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>
+</code></pre>
+<p>或者我们可以通过准确定位来替换缺失值:</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># Location based replacement</span>
+df<span class="token punctuation">.</span>loc<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token string">'ST_NUM'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">125</span>
+</code></pre>
+<p>替换缺失值的一种非常常见的方法是使用中位数:</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># Replace using median </span>
+median <span class="token operator">=</span> df<span class="token punctuation">[</span><span class="token string">'NUM_BEDROOMS'</span><span class="token punctuation">]</span><span class="token punctuation">.</span>median<span class="token punctuation">(</span><span class="token punctuation">)</span>
+df<span class="token punctuation">[</span><span class="token string">'NUM_BEDROOMS'</span><span class="token punctuation">]</span><span class="token punctuation">.</span>fillna<span class="token punctuation">(</span>median<span class="token punctuation">,</span> inplace<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>
+df
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>PID</th>
+      <th>ST_NUM</th>
+      <th>ST_NAME</th>
+      <th>OWN_OCCUPIED</th>
+      <th>NUM_BEDROOMS</th>
+      <th>NUM_BATH</th>
+      <th>SQ_FT</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>100001000.0</td>
+      <td>104.0</td>
+      <td>PUTNAM</td>
+      <td>Y</td>
+      <td>3.0</td>
+      <td>1</td>
+      <td>1000.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>100002000.0</td>
+      <td>197.0</td>
+      <td>LEXINGTON</td>
+      <td>N</td>
+      <td>3.0</td>
+      <td>1.5</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>100003000.0</td>
+      <td>125.0</td>
+      <td>LEXINGTON</td>
+      <td>N</td>
+      <td>2.5</td>
+      <td>1</td>
+      <td>850.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>100004000.0</td>
+      <td>201.0</td>
+      <td>BERKELEY</td>
+      <td>NaN</td>
+      <td>1.0</td>
+      <td>NaN</td>
+      <td>700.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>NaN</td>
+      <td>203.0</td>
+      <td>BERKELEY</td>
+      <td>Y</td>
+      <td>3.0</td>
+      <td>2</td>
+      <td>1600.0</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>100006000.0</td>
+      <td>207.0</td>
+      <td>BERKELEY</td>
+      <td>Y</td>
+      <td>2.5</td>
+      <td>1</td>
+      <td>800.0</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>100007000.0</td>
+      <td>125.0</td>
+      <td>WASHINGTON</td>
+      <td>NaN</td>
+      <td>2.0</td>
+      <td>HURLEY</td>
+      <td>950.0</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>100008000.0</td>
+      <td>213.0</td>
+      <td>TREMONT</td>
+      <td>Y</td>
+      <td>1.0</td>
+      <td>1</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>100009000.0</td>
+      <td>215.0</td>
+      <td>TREMONT</td>
+      <td>Y</td>
+      <td>2.5</td>
+      <td>2</td>
+      <td>1800.0</td>
+    </tr>
+  </tbody>
+</table>
+<h2 id="有关列的处理">2. 有关列的处理</h2>
+<h3 id="统一修改列名">2.1 统一修改列名</h3>
+<p>现在假设因为一些需求，需要我们统一修改列名，把列名改为小写，我们可以结合列表推导式轻易实现</p>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">.</span>rename<span class="token punctuation">(</span><span class="token builtin">str</span><span class="token punctuation">.</span>lower<span class="token punctuation">,</span> axis<span class="token operator">=</span><span class="token string">'columns'</span><span class="token punctuation">,</span>inplace <span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>
+df<span class="token punctuation">.</span>columns
+</code></pre>
+<pre><code>Index(['pid', 'st_num', 'st_name', 'own_occupied', 'num_bedrooms', 'num_bath',
+       'sq_ft'],
+      dtype='object')
+</code></pre>
+<p>或者需要把列名中的_改为-:</p>
+<pre class=" language-python"><code class="prism  language-python">new_cols <span class="token operator">=</span> <span class="token punctuation">[</span>c<span class="token punctuation">.</span>replace<span class="token punctuation">(</span><span class="token string">"_"</span><span class="token punctuation">,</span><span class="token string">"-"</span><span class="token punctuation">)</span> <span class="token keyword">for</span> c <span class="token keyword">in</span> df<span class="token punctuation">.</span>columns<span class="token punctuation">]</span>
+change_dict <span class="token operator">=</span><span class="token builtin">dict</span><span class="token punctuation">(</span><span class="token builtin">zip</span><span class="token punctuation">(</span>df<span class="token punctuation">.</span>columns<span class="token punctuation">,</span>new_cols<span class="token punctuation">)</span><span class="token punctuation">)</span>
+df<span class="token punctuation">.</span>rename<span class="token punctuation">(</span>columns<span class="token operator">=</span>change_dict<span class="token punctuation">,</span>inplace<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>
+df
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>pid</th>
+      <th>st-num</th>
+      <th>st-name</th>
+      <th>own-occupied</th>
+      <th>num-bedrooms</th>
+      <th>num-bath</th>
+      <th>sq-ft</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>100001000.0</td>
+      <td>104.0</td>
+      <td>PUTNAM</td>
+      <td>Y</td>
+      <td>3.0</td>
+      <td>1</td>
+      <td>1000.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>100002000.0</td>
+      <td>197.0</td>
+      <td>LEXINGTON</td>
+      <td>N</td>
+      <td>3.0</td>
+      <td>1.5</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>100003000.0</td>
+      <td>125.0</td>
+      <td>LEXINGTON</td>
+      <td>N</td>
+      <td>2.5</td>
+      <td>1</td>
+      <td>850.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>100004000.0</td>
+      <td>201.0</td>
+      <td>BERKELEY</td>
+      <td>NaN</td>
+      <td>1.0</td>
+      <td>NaN</td>
+      <td>700.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>NaN</td>
+      <td>203.0</td>
+      <td>BERKELEY</td>
+      <td>Y</td>
+      <td>3.0</td>
+      <td>2</td>
+      <td>1600.0</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>100006000.0</td>
+      <td>207.0</td>
+      <td>BERKELEY</td>
+      <td>Y</td>
+      <td>2.5</td>
+      <td>1</td>
+      <td>800.0</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>100007000.0</td>
+      <td>125.0</td>
+      <td>WASHINGTON</td>
+      <td>NaN</td>
+      <td>2.0</td>
+      <td>HURLEY</td>
+      <td>950.0</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>100008000.0</td>
+      <td>213.0</td>
+      <td>TREMONT</td>
+      <td>Y</td>
+      <td>1.0</td>
+      <td>1</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>100009000.0</td>
+      <td>215.0</td>
+      <td>TREMONT</td>
+      <td>Y</td>
+      <td>2.5</td>
+      <td>2</td>
+      <td>1800.0</td>
+    </tr>
+  </tbody>
+</table>
+<p>这里我没有写的精简一些，反而是复杂了，主要是想让大家回忆起之前我分享的dict使用技巧中的内容，注意这里inplace=True，导致的结果是我们的的确确修改了df所有的列名</p>
+<h3 id="根据需求新增列">2.1 根据需求新增列</h3>
+<p>假如目前我们需要新增一列，根据房屋面积大小来赋值,我们先随意把缺失值补上：</p>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">[</span><span class="token string">'sq-ft'</span><span class="token punctuation">]</span><span class="token punctuation">.</span>fillna<span class="token punctuation">(</span><span class="token string">'0.0'</span><span class="token punctuation">)</span>
+</code></pre>
+<pre><code>0    1000
+1     0.0
+2     850
+3     700
+4    1600
+5     800
+6     950
+7     0.0
+8    1800
+Name: sq-ft, dtype: object
+</code></pre>
+<p>然后新建一列rank来根据房屋面积大小赋值S=small,M=medium,B=big：</p>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">[</span><span class="token string">"rank"</span><span class="token punctuation">]</span><span class="token operator">=</span> pd<span class="token punctuation">.</span>cut<span class="token punctuation">(</span>df<span class="token punctuation">[</span><span class="token string">'sq-ft'</span><span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">800</span><span class="token punctuation">,</span> <span class="token number">1600</span><span class="token punctuation">,</span> np<span class="token punctuation">.</span>inf<span class="token punctuation">]</span><span class="token punctuation">,</span> labels<span class="token operator">=</span><span class="token punctuation">(</span><span class="token string">"S"</span><span class="token punctuation">,</span><span class="token string">"M"</span><span class="token punctuation">,</span><span class="token string">"B"</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+df
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>pid</th>
+      <th>st-num</th>
+      <th>st-name</th>
+      <th>own-occupied</th>
+      <th>num-bedrooms</th>
+      <th>num-bath</th>
+      <th>sq-ft</th>
+      <th>rank</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>100001000.0</td>
+      <td>104.0</td>
+      <td>PUTNAM</td>
+      <td>Y</td>
+      <td>3.0</td>
+      <td>1</td>
+      <td>1000.0</td>
+      <td>M</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>100002000.0</td>
+      <td>197.0</td>
+      <td>LEXINGTON</td>
+      <td>N</td>
+      <td>3.0</td>
+      <td>1.5</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>100003000.0</td>
+      <td>125.0</td>
+      <td>LEXINGTON</td>
+      <td>N</td>
+      <td>2.5</td>
+      <td>1</td>
+      <td>850.0</td>
+      <td>M</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>100004000.0</td>
+      <td>201.0</td>
+      <td>BERKELEY</td>
+      <td>NaN</td>
+      <td>1.0</td>
+      <td>NaN</td>
+      <td>700.0</td>
+      <td>S</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>NaN</td>
+      <td>203.0</td>
+      <td>BERKELEY</td>
+      <td>Y</td>
+      <td>3.0</td>
+      <td>2</td>
+      <td>1600.0</td>
+      <td>M</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>100006000.0</td>
+      <td>207.0</td>
+      <td>BERKELEY</td>
+      <td>Y</td>
+      <td>2.5</td>
+      <td>1</td>
+      <td>800.0</td>
+      <td>S</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>100007000.0</td>
+      <td>125.0</td>
+      <td>WASHINGTON</td>
+      <td>NaN</td>
+      <td>2.0</td>
+      <td>HURLEY</td>
+      <td>950.0</td>
+      <td>M</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>100008000.0</td>
+      <td>213.0</td>
+      <td>TREMONT</td>
+      <td>Y</td>
+      <td>1.0</td>
+      <td>1</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>100009000.0</td>
+      <td>215.0</td>
+      <td>TREMONT</td>
+      <td>Y</td>
+      <td>2.5</td>
+      <td>2</td>
+      <td>1800.0</td>
+      <td>B</td>
+    </tr>
+  </tbody>
+</table>
+<p>具体实现方法我们之后会说，这里主要是用到了pandas的cut方法，非常便捷</p>
+<h2 id="设置index">3. 设置Index</h2>
+<p>在许多情况下，使用数据的唯一值标识字段作为其索引是有帮助的。这里可能我们的数据不太合适，因此我们先伪造一列Fake_Index来模拟真实场景中的真正索引</p>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">[</span><span class="token string">"Fake_Index"</span><span class="token punctuation">]</span><span class="token operator">=</span><span class="token punctuation">[</span><span class="token string">"A00"</span><span class="token operator">+</span><span class="token builtin">str</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span> <span class="token keyword">for</span> i <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token builtin">len</span><span class="token punctuation">(</span>df<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+df
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>pid</th>
+      <th>st-num</th>
+      <th>st-name</th>
+      <th>own-occupied</th>
+      <th>num-bedrooms</th>
+      <th>num-bath</th>
+      <th>sq-ft</th>
+      <th>rank</th>
+      <th>Fake_Index</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>100001000.0</td>
+      <td>104.0</td>
+      <td>PUTNAM</td>
+      <td>Y</td>
+      <td>3.0</td>
+      <td>1</td>
+      <td>1000.0</td>
+      <td>M</td>
+      <td>A000</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>100002000.0</td>
+      <td>197.0</td>
+      <td>LEXINGTON</td>
+      <td>N</td>
+      <td>3.0</td>
+      <td>1.5</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>A001</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>100003000.0</td>
+      <td>125.0</td>
+      <td>LEXINGTON</td>
+      <td>N</td>
+      <td>2.5</td>
+      <td>1</td>
+      <td>850.0</td>
+      <td>M</td>
+      <td>A002</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>100004000.0</td>
+      <td>201.0</td>
+      <td>BERKELEY</td>
+      <td>NaN</td>
+      <td>1.0</td>
+      <td>NaN</td>
+      <td>700.0</td>
+      <td>S</td>
+      <td>A003</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>NaN</td>
+      <td>203.0</td>
+      <td>BERKELEY</td>
+      <td>Y</td>
+      <td>3.0</td>
+      <td>2</td>
+      <td>1600.0</td>
+      <td>M</td>
+      <td>A004</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>100006000.0</td>
+      <td>207.0</td>
+      <td>BERKELEY</td>
+      <td>Y</td>
+      <td>2.5</td>
+      <td>1</td>
+      <td>800.0</td>
+      <td>S</td>
+      <td>A005</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>100007000.0</td>
+      <td>125.0</td>
+      <td>WASHINGTON</td>
+      <td>NaN</td>
+      <td>2.0</td>
+      <td>HURLEY</td>
+      <td>950.0</td>
+      <td>M</td>
+      <td>A006</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>100008000.0</td>
+      <td>213.0</td>
+      <td>TREMONT</td>
+      <td>Y</td>
+      <td>1.0</td>
+      <td>1</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>A007</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>100009000.0</td>
+      <td>215.0</td>
+      <td>TREMONT</td>
+      <td>Y</td>
+      <td>2.5</td>
+      <td>2</td>
+      <td>1800.0</td>
+      <td>B</td>
+      <td>A008</td>
+    </tr>
+  </tbody>
+</table>
+<p>现在我们添加的最后一列非常像真正的房屋Id了，让我们来看看这个伪造的索引是不是唯一值，可以利用is_unique来检验：</p>
+<pre class=" language-python"><code class="prism  language-python">df<span class="token punctuation">.</span>Fake_Index<span class="token punctuation">.</span>is_unique
+</code></pre>
+<pre><code>True
+</code></pre>
+<p>没有问题，现在我们可以放心地把这列设置为我们真正的索引：</p>
+<pre class=" language-python"><code class="prism  language-python">df <span class="token operator">=</span> df<span class="token punctuation">.</span>set_index<span class="token punctuation">(</span><span class="token string">'Fake_Index'</span><span class="token punctuation">)</span>
+df
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>pid</th>
+      <th>st-num</th>
+      <th>st-name</th>
+      <th>own-occupied</th>
+      <th>num-bedrooms</th>
+      <th>num-bath</th>
+      <th>sq-ft</th>
+      <th>rank</th>
+    </tr>
+    <tr>
+      <th>Fake_Index</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>A000</th>
+      <td>100001000.0</td>
+      <td>104.0</td>
+      <td>PUTNAM</td>
+      <td>Y</td>
+      <td>3.0</td>
+      <td>1</td>
+      <td>1000.0</td>
+      <td>M</td>
+    </tr>
+    <tr>
+      <th>A001</th>
+      <td>100002000.0</td>
+      <td>197.0</td>
+      <td>LEXINGTON</td>
+      <td>N</td>
+      <td>3.0</td>
+      <td>1.5</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>A002</th>
+      <td>100003000.0</td>
+      <td>125.0</td>
+      <td>LEXINGTON</td>
+      <td>N</td>
+      <td>2.5</td>
+      <td>1</td>
+      <td>850.0</td>
+      <td>M</td>
+    </tr>
+    <tr>
+      <th>A003</th>
+      <td>100004000.0</td>
+      <td>201.0</td>
+      <td>BERKELEY</td>
+      <td>NaN</td>
+      <td>1.0</td>
+      <td>NaN</td>
+      <td>700.0</td>
+      <td>S</td>
+    </tr>
+    <tr>
+      <th>A004</th>
+      <td>NaN</td>
+      <td>203.0</td>
+      <td>BERKELEY</td>
+      <td>Y</td>
+      <td>3.0</td>
+      <td>2</td>
+      <td>1600.0</td>
+      <td>M</td>
+    </tr>
+    <tr>
+      <th>A005</th>
+      <td>100006000.0</td>
+      <td>207.0</td>
+      <td>BERKELEY</td>
+      <td>Y</td>
+      <td>2.5</td>
+      <td>1</td>
+      <td>800.0</td>
+      <td>S</td>
+    </tr>
+    <tr>
+      <th>A006</th>
+      <td>100007000.0</td>
+      <td>125.0</td>
+      <td>WASHINGTON</td>
+      <td>NaN</td>
+      <td>2.0</td>
+      <td>HURLEY</td>
+      <td>950.0</td>
+      <td>M</td>
+    </tr>
+    <tr>
+      <th>A007</th>
+      <td>100008000.0</td>
+      <td>213.0</td>
+      <td>TREMONT</td>
+      <td>Y</td>
+      <td>1.0</td>
+      <td>1</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>A008</th>
+      <td>100009000.0</td>
+      <td>215.0</td>
+      <td>TREMONT</td>
+      <td>Y</td>
+      <td>2.5</td>
+      <td>2</td>
+      <td>1800.0</td>
+      <td>B</td>
+    </tr>
+  </tbody>
+</table>
+<p>现在对数据的操作容易多了，我们很多事情可以通过索引完成：</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment">#  根据索引名称切片</span>
+df<span class="token punctuation">[</span><span class="token string">'A000'</span><span class="token punctuation">:</span><span class="token string">'A003'</span><span class="token punctuation">]</span>
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>pid</th>
+      <th>st-num</th>
+      <th>st-name</th>
+      <th>own-occupied</th>
+      <th>num-bedrooms</th>
+      <th>num-bath</th>
+      <th>sq-ft</th>
+      <th>rank</th>
+    </tr>
+    <tr>
+      <th>Fake_Index</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>A000</th>
+      <td>100001000.0</td>
+      <td>104.0</td>
+      <td>PUTNAM</td>
+      <td>Y</td>
+      <td>3.0</td>
+      <td>1</td>
+      <td>1000.0</td>
+      <td>M</td>
+    </tr>
+    <tr>
+      <th>A001</th>
+      <td>100002000.0</td>
+      <td>197.0</td>
+      <td>LEXINGTON</td>
+      <td>N</td>
+      <td>3.0</td>
+      <td>1.5</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>A002</th>
+      <td>100003000.0</td>
+      <td>125.0</td>
+      <td>LEXINGTON</td>
+      <td>N</td>
+      <td>2.5</td>
+      <td>1</td>
+      <td>850.0</td>
+      <td>M</td>
+    </tr>
+    <tr>
+      <th>A003</th>
+      <td>100004000.0</td>
+      <td>201.0</td>
+      <td>BERKELEY</td>
+      <td>NaN</td>
+      <td>1.0</td>
+      <td>NaN</td>
+      <td>700.0</td>
+      <td>S</td>
+    </tr>
+  </tbody>
+</table>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment">#  根据索引位置切片</span>
+
+df<span class="token punctuation">.</span>iloc<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">:</span><span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">:</span><span class="token number">3</span><span class="token punctuation">]</span>
+</code></pre>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>pid</th>
+      <th>st-num</th>
+      <th>st-name</th>
+    </tr>
+    <tr>
+      <th>Fake_Index</th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>A001</th>
+      <td>100002000.0</td>
+      <td>197.0</td>
+      <td>LEXINGTON</td>
+    </tr>
+    <tr>
+      <th>A002</th>
+      <td>100003000.0</td>
+      <td>125.0</td>
+      <td>LEXINGTON</td>
+    </tr>
+  </tbody>
+</table>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># 定位到具体元素</span>
+df<span class="token punctuation">.</span>iloc<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">]</span>
+</code></pre>
+<pre><code>'LEXINGTON'
+</code></pre>
+<h2 id="总结">总结</h2>
+<p>我把这一期的ipynb文件和py文件放到了GIthub上，大家如果想要下载可以点击下面的链接：</p>
+<ul>
+<li>Github仓库地址： <a href="https://github.com/yaozeliang/pandas_share">https://github.com/yaozeliang/pandas_share</a></li>
+</ul>
+<p>这一期先讲到这里，希望大家能够继续支持我，完结，撒花</p>
+
+    </div>
+  </div>
+</body>
+
+</html>
