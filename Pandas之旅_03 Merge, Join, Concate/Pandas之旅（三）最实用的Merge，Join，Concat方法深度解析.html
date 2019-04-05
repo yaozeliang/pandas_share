@@ -1,0 +1,1477 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pandas之旅（三）最实用的Merge，Join，Concat方法深度解析</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__left">
+    <div class="stackedit__toc">
+      
+<ul>
+<li>
+<ul>
+<li><a href="#mergejoin-concatsort">Merge,Join, Concat,Sort</a></li>
+<li><a href="#merge">1. Merge</a></li>
+<li><a href="#join">2.Join</a></li>
+<li><a href="#concat">3. Concat</a></li>
+<li><a href="#源码及github地址">4. 源码及Github地址</a></li>
+</ul>
+</li>
+</ul>
+
+    </div>
+  </div>
+  <div class="stackedit__right">
+    <div class="stackedit__html">
+      <h2 id="mergejoin-concatsort">Merge,Join, Concat,Sort</h2>
+<p>大家好，我有回来啦，这周更新的有点慢，主要是因为我更新了个人简历哈哈，如果感兴趣的朋友可以去看看哈：</p>
+<ul>
+<li><a href="www.yaozeliang.com/resume/">我的主页</a>，</li>
+</ul>
+<p>个人认为还是很漂亮的~，不得不说，很多时候老外的设计能力还是很强。</p>
+<p>好了，有点扯远了，这一期我想和大家分享的是pandas中最常见的几种方法，这些方法如果你学会了，某种程度上可以很好的替代Excel，这篇文章是pandas之旅的第三篇，主要会从以下几个方面和大家分享我的心得体会：</p>
+<ol>
+<li>Merge</li>
+<li>Join</li>
+<li>Concat</li>
+<li>源码及GitHub地址</li>
+</ol>
+<p>话不多说，让我们开始今天的Pandas之旅吧！</p>
+<h2 id="merge">1. Merge</h2>
+<p>首先merge的操作非常类似sql里面的join，实现将两个Dataframe根据一些共有的列连接起来，当然，在实际场景中，这些共有列一般是Id，<br>
+连接方式也丰富多样，可以选择inner(默认)，left,right,outer 这几种模式，分别对应的是内连接，左连接，右连接</p>
+<h3 id="innermerge-内连接">1.1 InnerMerge (内连接)</h3>
+<p>首先让我们简单的创建两个DF,分别为DataFrame1,DataFrame2,他们的公有列是key</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token keyword">import</span> numpy <span class="token keyword">as</span> np
+<span class="token keyword">import</span> pandas <span class="token keyword">as</span> pd
+<span class="token keyword">from</span> pandas <span class="token keyword">import</span> Series<span class="token punctuation">,</span> DataFrame
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># Let's make a dframe</span>
+dframe1 <span class="token operator">=</span> DataFrame<span class="token punctuation">(</span><span class="token punctuation">{</span><span class="token string">'key'</span><span class="token punctuation">:</span><span class="token punctuation">[</span><span class="token string">'X'</span><span class="token punctuation">,</span><span class="token string">'Z'</span><span class="token punctuation">,</span><span class="token string">'Y'</span><span class="token punctuation">,</span><span class="token string">'Z'</span><span class="token punctuation">,</span><span class="token string">'X'</span><span class="token punctuation">,</span><span class="token string">'X'</span><span class="token punctuation">]</span><span class="token punctuation">,</span><span class="token string">'value_df1'</span><span class="token punctuation">:</span> np<span class="token punctuation">.</span>arange<span class="token punctuation">(</span><span class="token number">6</span><span class="token punctuation">)</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+dframe1
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>key</th>
+      <th>value_df1</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>X</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Z</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Y</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Z</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>X</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>X</td>
+      <td>5</td>
+    </tr>
+  </tbody>
+</table>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment">#Now lets make another dframe</span>
+dframe2 <span class="token operator">=</span> DataFrame<span class="token punctuation">(</span><span class="token punctuation">{</span><span class="token string">'key'</span><span class="token punctuation">:</span><span class="token punctuation">[</span><span class="token string">'Q'</span><span class="token punctuation">,</span><span class="token string">'Y'</span><span class="token punctuation">,</span><span class="token string">'Z'</span><span class="token punctuation">]</span><span class="token punctuation">,</span><span class="token string">'value_df2'</span><span class="token punctuation">:</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">]</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+dframe2
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>key</th>
+      <th>value_df2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Q</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Y</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Z</td>
+      <td>3</td>
+    </tr>
+  </tbody>
+</table>
+<p>我们现在可以简单地使用pd.merge(dframe1,dframe2)来实现Merge功能</p>
+<pre class=" language-python"><code class="prism  language-python">pd<span class="token punctuation">.</span>merge<span class="token punctuation">(</span>dframe1<span class="token punctuation">,</span>dframe2<span class="token punctuation">)</span>
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>key</th>
+      <th>value_df1</th>
+      <th>value_df2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Z</td>
+      <td>1</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Z</td>
+      <td>3</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Y</td>
+      <td>2</td>
+      <td>2</td>
+    </tr>
+  </tbody>
+</table>
+<p>我们现在需要注意一点，X仅仅是存在于dframe1的key，在dframe2中不存在，因此大家可以发现，当我们调用pd.merge的时候，会自动默认为inner join，<br>
+我们再换一种方式写一下，大家就明白了：</p>
+<pre class=" language-python"><code class="prism  language-python">pd<span class="token punctuation">.</span>merge<span class="token punctuation">(</span>dframe1<span class="token punctuation">,</span>dframe2<span class="token punctuation">,</span>on<span class="token operator">=</span><span class="token string">'key'</span><span class="token punctuation">,</span>how<span class="token operator">=</span><span class="token string">'inner'</span><span class="token punctuation">)</span>
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>key</th>
+      <th>value_df1</th>
+      <th>value_df2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Z</td>
+      <td>1</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Z</td>
+      <td>3</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Y</td>
+      <td>2</td>
+      <td>2</td>
+    </tr>
+  </tbody>
+</table>
+<pre class=" language-python"><code class="prism  language-python">大家可以发现结果是一样的，看到这里，对sql熟悉的朋友们已经有感觉了估计，因为实在是太像了，如果我们不通过on和how来指定
+想要merge的公有列或者方式，那么pd<span class="token punctuation">.</span>merge就会自动寻找到两个DataFrame的相同列并自动默认为inner join，至此，
+估计大家也可以猜出其他几种模式的merge啦
+
+</code></pre>
+<h3 id="leftmerge-左连接">1.2 LeftMerge (左连接)</h3>
+<pre class=" language-python"><code class="prism  language-python">现在同样的，让我们看一下how<span class="token operator">=</span><span class="token string">'left'</span>的情况，这是一个左连接
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">pd<span class="token punctuation">.</span>merge<span class="token punctuation">(</span>dframe1<span class="token punctuation">,</span>dframe2<span class="token punctuation">,</span>on<span class="token operator">=</span><span class="token string">'key'</span><span class="token punctuation">,</span>how<span class="token operator">=</span><span class="token string">'left'</span><span class="token punctuation">)</span>
+
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>key</th>
+      <th>value_df1</th>
+      <th>value_df2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>X</td>
+      <td>0</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Z</td>
+      <td>1</td>
+      <td>3.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Y</td>
+      <td>2</td>
+      <td>2.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Z</td>
+      <td>3</td>
+      <td>3.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>X</td>
+      <td>4</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>X</td>
+      <td>5</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table>
+<p>我们可以看到返回的是dframe1的所有key值对应的结果，如果在dframe2中不存在，显示为Nan空值</p>
+<h3 id="rightmerge-右连接">1.3 RightMerge (右连接)</h3>
+<p>右连接的原理和左连接正相反</p>
+<pre class=" language-python"><code class="prism  language-python">pd<span class="token punctuation">.</span>merge<span class="token punctuation">(</span>dframe1<span class="token punctuation">,</span>dframe2<span class="token punctuation">,</span>on<span class="token operator">=</span><span class="token string">'key'</span><span class="token punctuation">,</span>how<span class="token operator">=</span><span class="token string">'right'</span><span class="token punctuation">)</span>
+
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>key</th>
+      <th>value_df1</th>
+      <th>value_df2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Z</td>
+      <td>1.0</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Z</td>
+      <td>3.0</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Y</td>
+      <td>2.0</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Q</td>
+      <td>NaN</td>
+      <td>1</td>
+    </tr>
+  </tbody>
+</table>
+<p>这里Q只存在于drame2的key中</p>
+<h3 id="outermerge-全连接">1.4 OuterMerge (全连接)</h3>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment">#Choosing the "outer" method selects the union of both keys</span>
+pd<span class="token punctuation">.</span>merge<span class="token punctuation">(</span>dframe1<span class="token punctuation">,</span>dframe2<span class="token punctuation">,</span>on<span class="token operator">=</span><span class="token string">'key'</span><span class="token punctuation">,</span>how<span class="token operator">=</span><span class="token string">'outer'</span><span class="token punctuation">)</span>
+
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>key</th>
+      <th>value_df1</th>
+      <th>value_df2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>X</td>
+      <td>0.0</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>X</td>
+      <td>4.0</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>X</td>
+      <td>5.0</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Z</td>
+      <td>1.0</td>
+      <td>3.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Z</td>
+      <td>3.0</td>
+      <td>3.0</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>Y</td>
+      <td>2.0</td>
+      <td>2.0</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>Q</td>
+      <td>NaN</td>
+      <td>1.0</td>
+    </tr>
+  </tbody>
+</table>
+<pre class=" language-python"><code class="prism  language-python"> 这里就是一个并集的形式啦，其实就是一个union的结果，会把key这一列在两个Dataframe出现的所有值全部显示出来，如果有空值显示为Nan
+</code></pre>
+<h3 id="multiplekey-merge-基于多个key上的merge">1.5 MultipleKey Merge (基于多个key上的merge)</h3>
+<p>刚才我们都是仅仅实现的在一个key上的merge，当然我们也可以实现基于多个keys的merge</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># Dframe on left</span>
+df_left <span class="token operator">=</span> DataFrame<span class="token punctuation">(</span><span class="token punctuation">{</span><span class="token string">'key1'</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token string">'SF'</span><span class="token punctuation">,</span> <span class="token string">'SF'</span><span class="token punctuation">,</span> <span class="token string">'LA'</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                  <span class="token string">'key2'</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token string">'one'</span><span class="token punctuation">,</span> <span class="token string">'two'</span><span class="token punctuation">,</span> <span class="token string">'one'</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                  <span class="token string">'left_data'</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token number">10</span><span class="token punctuation">,</span><span class="token number">20</span><span class="token punctuation">,</span><span class="token number">30</span><span class="token punctuation">]</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+df_left
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>key1</th>
+      <th>key2</th>
+      <th>left_data</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>SF</td>
+      <td>one</td>
+      <td>10</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>SF</td>
+      <td>two</td>
+      <td>20</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>LA</td>
+      <td>one</td>
+      <td>30</td>
+    </tr>
+  </tbody>
+</table>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment">#Dframe on right</span>
+df_right <span class="token operator">=</span> DataFrame<span class="token punctuation">(</span><span class="token punctuation">{</span><span class="token string">'key1'</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token string">'SF'</span><span class="token punctuation">,</span> <span class="token string">'SF'</span><span class="token punctuation">,</span> <span class="token string">'LA'</span><span class="token punctuation">,</span> <span class="token string">'LA'</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                   <span class="token string">'key2'</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token string">'one'</span><span class="token punctuation">,</span> <span class="token string">'one'</span><span class="token punctuation">,</span> <span class="token string">'one'</span><span class="token punctuation">,</span> <span class="token string">'two'</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                   <span class="token string">'right_data'</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token number">40</span><span class="token punctuation">,</span><span class="token number">50</span><span class="token punctuation">,</span><span class="token number">60</span><span class="token punctuation">,</span><span class="token number">70</span><span class="token punctuation">]</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+df_right
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>key1</th>
+      <th>key2</th>
+      <th>right_data</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>SF</td>
+      <td>one</td>
+      <td>40</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>SF</td>
+      <td>one</td>
+      <td>50</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>LA</td>
+      <td>one</td>
+      <td>60</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>LA</td>
+      <td>two</td>
+      <td>70</td>
+    </tr>
+  </tbody>
+</table>
+<pre class=" language-python"><code class="prism  language-python">这是内连接（交集）的结果
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment">#Merge， Inner</span>
+pd<span class="token punctuation">.</span>merge<span class="token punctuation">(</span>df_left<span class="token punctuation">,</span> df_right<span class="token punctuation">,</span> on<span class="token operator">=</span><span class="token punctuation">[</span><span class="token string">'key1'</span><span class="token punctuation">,</span> <span class="token string">'key2'</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>key1</th>
+      <th>key2</th>
+      <th>left_data</th>
+      <th>right_data</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>SF</td>
+      <td>one</td>
+      <td>10</td>
+      <td>40</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>SF</td>
+      <td>one</td>
+      <td>10</td>
+      <td>50</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>LA</td>
+      <td>one</td>
+      <td>30</td>
+      <td>60</td>
+    </tr>
+  </tbody>
+</table>
+<pre class=" language-python"><code class="prism  language-python">这是外连接（并集）的结果
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment">#Merge， Outer</span>
+pd<span class="token punctuation">.</span>merge<span class="token punctuation">(</span>df_left<span class="token punctuation">,</span> df_right<span class="token punctuation">,</span> on<span class="token operator">=</span><span class="token punctuation">[</span><span class="token string">'key1'</span><span class="token punctuation">,</span> <span class="token string">'key2'</span><span class="token punctuation">]</span><span class="token punctuation">,</span>how<span class="token operator">=</span><span class="token string">'outer'</span><span class="token punctuation">)</span>
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>key1</th>
+      <th>key2</th>
+      <th>left_data</th>
+      <th>right_data</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>SF</td>
+      <td>one</td>
+      <td>10.0</td>
+      <td>40.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>SF</td>
+      <td>one</td>
+      <td>10.0</td>
+      <td>50.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>SF</td>
+      <td>two</td>
+      <td>20.0</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>LA</td>
+      <td>one</td>
+      <td>30.0</td>
+      <td>60.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>LA</td>
+      <td>two</td>
+      <td>NaN</td>
+      <td>70.0</td>
+    </tr>
+  </tbody>
+</table>
+<p>这里还有一个地方非常有意思，大家可以发现现在df_left,df_right作为key的两列分别是key1和key2，它们的名字是相同的，刚刚我们是通过制定on=[‘key1’, ‘key2’],那如果我们只指定一列会怎么样呢？</p>
+<pre class=" language-python"><code class="prism  language-python">pd<span class="token punctuation">.</span>merge<span class="token punctuation">(</span>df_left<span class="token punctuation">,</span>df_right<span class="token punctuation">,</span>on<span class="token operator">=</span><span class="token string">'key1'</span><span class="token punctuation">)</span>
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>key1</th>
+      <th>key2_x</th>
+      <th>left_data</th>
+      <th>key2_y</th>
+      <th>right_data</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>SF</td>
+      <td>one</td>
+      <td>10</td>
+      <td>one</td>
+      <td>40</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>SF</td>
+      <td>one</td>
+      <td>10</td>
+      <td>one</td>
+      <td>50</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>SF</td>
+      <td>two</td>
+      <td>20</td>
+      <td>one</td>
+      <td>40</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>SF</td>
+      <td>two</td>
+      <td>20</td>
+      <td>one</td>
+      <td>50</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>LA</td>
+      <td>one</td>
+      <td>30</td>
+      <td>one</td>
+      <td>60</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>LA</td>
+      <td>one</td>
+      <td>30</td>
+      <td>two</td>
+      <td>70</td>
+    </tr>
+  </tbody>
+</table>
+<p>大家可以看到pandas自动把key2这一列拆分成了key2_x和key2_y，都会显示在最后的merge结果里，如果我们想要给这两列重新命名，也是很容易的：</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># We can also specify what the suffix becomes</span>
+pd<span class="token punctuation">.</span>merge<span class="token punctuation">(</span>df_left<span class="token punctuation">,</span>df_right<span class="token punctuation">,</span> on<span class="token operator">=</span><span class="token string">'key1'</span><span class="token punctuation">,</span>suffixes<span class="token operator">=</span><span class="token punctuation">(</span><span class="token string">'_lefty'</span><span class="token punctuation">,</span><span class="token string">'_righty'</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>key1</th>
+      <th>key2_lefty</th>
+      <th>left_data</th>
+      <th>key2_righty</th>
+      <th>right_data</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>SF</td>
+      <td>one</td>
+      <td>10</td>
+      <td>one</td>
+      <td>40</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>SF</td>
+      <td>one</td>
+      <td>10</td>
+      <td>one</td>
+      <td>50</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>SF</td>
+      <td>two</td>
+      <td>20</td>
+      <td>one</td>
+      <td>40</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>SF</td>
+      <td>two</td>
+      <td>20</td>
+      <td>one</td>
+      <td>50</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>LA</td>
+      <td>one</td>
+      <td>30</td>
+      <td>one</td>
+      <td>60</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>LA</td>
+      <td>one</td>
+      <td>30</td>
+      <td>two</td>
+      <td>70</td>
+    </tr>
+  </tbody>
+</table>
+<p>像这样，我们可以通过suffixes参数来指定拆分的列的名字。</p>
+<h3 id="merge-on-index-基于index上的merge">1.6 Merge on Index (基于index上的merge)</h3>
+<pre class=" language-python"><code class="prism  language-python">我们还可以实现几个Dataframe基于Index的merge，还是老样子，先让我们创建两个Dataframe
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">df_left <span class="token operator">=</span> DataFrame<span class="token punctuation">(</span><span class="token punctuation">{</span><span class="token string">'key'</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token string">'X'</span><span class="token punctuation">,</span><span class="token string">'Y'</span><span class="token punctuation">,</span><span class="token string">'Z'</span><span class="token punctuation">,</span><span class="token string">'X'</span><span class="token punctuation">,</span><span class="token string">'Y'</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                  <span class="token string">'data'</span><span class="token punctuation">:</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">)</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+df_right <span class="token operator">=</span> DataFrame<span class="token punctuation">(</span><span class="token punctuation">{</span><span class="token string">'group_data'</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">20</span><span class="token punctuation">]</span><span class="token punctuation">}</span><span class="token punctuation">,</span> index<span class="token operator">=</span><span class="token punctuation">[</span><span class="token string">'X'</span><span class="token punctuation">,</span> <span class="token string">'Y'</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">df_left
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>key</th>
+      <th>data</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>X</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Y</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Z</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>X</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Y</td>
+      <td>4</td>
+    </tr>
+  </tbody>
+</table>
+<pre class=" language-python"><code class="prism  language-python">df_right
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>group_data</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>X</th>
+      <td>10</td>
+    </tr>
+    <tr>
+      <th>Y</th>
+      <td>20</td>
+    </tr>
+  </tbody>
+</table>
+<p>好了，现在我们想要实现两个Dataframe的merge，但是条件是通过df_left的Key和df_right的Index</p>
+<pre class=" language-python"><code class="prism  language-python">pd<span class="token punctuation">.</span>merge<span class="token punctuation">(</span>df_left<span class="token punctuation">,</span>df_right<span class="token punctuation">,</span>left_on<span class="token operator">=</span><span class="token string">'key'</span><span class="token punctuation">,</span>right_index<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>key</th>
+      <th>data</th>
+      <th>group_data</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>X</td>
+      <td>0</td>
+      <td>10</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>X</td>
+      <td>3</td>
+      <td>10</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Y</td>
+      <td>1</td>
+      <td>20</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Y</td>
+      <td>4</td>
+      <td>20</td>
+    </tr>
+  </tbody>
+</table>
+<p>这样我们也可以得到结果。</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># We can also get a union by using outer</span>
+pd<span class="token punctuation">.</span>merge<span class="token punctuation">(</span>df_left<span class="token punctuation">,</span>df_right<span class="token punctuation">,</span>left_on<span class="token operator">=</span><span class="token string">'key'</span><span class="token punctuation">,</span>right_index<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">,</span>how<span class="token operator">=</span><span class="token string">'outer'</span><span class="token punctuation">)</span>
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>key</th>
+      <th>data</th>
+      <th>group_data</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>X</td>
+      <td>0</td>
+      <td>10.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>X</td>
+      <td>3</td>
+      <td>10.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Y</td>
+      <td>1</td>
+      <td>20.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Y</td>
+      <td>4</td>
+      <td>20.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Z</td>
+      <td>2</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table>
+<p>其他的merge方式就类似啦，这里就不一一说了，只是举一个outer join的例子</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># 通过outer实现外连接，union并集</span>
+pd<span class="token punctuation">.</span>merge<span class="token punctuation">(</span>df_left<span class="token punctuation">,</span>df_right<span class="token punctuation">,</span>left_on<span class="token operator">=</span><span class="token string">'key'</span><span class="token punctuation">,</span>right_index<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">,</span>how<span class="token operator">=</span><span class="token string">'outer'</span><span class="token punctuation">)</span>
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>key</th>
+      <th>data</th>
+      <th>group_data</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>X</td>
+      <td>0</td>
+      <td>10.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>X</td>
+      <td>3</td>
+      <td>10.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Y</td>
+      <td>1</td>
+      <td>20.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Y</td>
+      <td>4</td>
+      <td>20.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Z</td>
+      <td>2</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table>
+<pre class=" language-python"><code class="prism  language-python">我们也可以尝试一些有意思的merge，比如，如果一个dataframe的index是多层嵌套的情况：
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">df_left_hr <span class="token operator">=</span> DataFrame<span class="token punctuation">(</span><span class="token punctuation">{</span><span class="token string">'key1'</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token string">'SF'</span><span class="token punctuation">,</span><span class="token string">'SF'</span><span class="token punctuation">,</span><span class="token string">'SF'</span><span class="token punctuation">,</span><span class="token string">'LA'</span><span class="token punctuation">,</span><span class="token string">'LA'</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                   <span class="token string">'key2'</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">20</span><span class="token punctuation">,</span> <span class="token number">30</span><span class="token punctuation">,</span> <span class="token number">20</span><span class="token punctuation">,</span> <span class="token number">30</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                   <span class="token string">'data_set'</span><span class="token punctuation">:</span> np<span class="token punctuation">.</span>arange<span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">.</span><span class="token punctuation">)</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+df_right_hr <span class="token operator">=</span> DataFrame<span class="token punctuation">(</span>np<span class="token punctuation">.</span>arange<span class="token punctuation">(</span><span class="token number">10</span><span class="token punctuation">)</span><span class="token punctuation">.</span>reshape<span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                   index<span class="token operator">=</span><span class="token punctuation">[</span><span class="token punctuation">[</span><span class="token string">'LA'</span><span class="token punctuation">,</span><span class="token string">'LA'</span><span class="token punctuation">,</span><span class="token string">'SF'</span><span class="token punctuation">,</span><span class="token string">'SF'</span><span class="token punctuation">,</span><span class="token string">'SF'</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                          <span class="token punctuation">[</span><span class="token number">20</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">20</span><span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                   columns<span class="token operator">=</span><span class="token punctuation">[</span><span class="token string">'col_1'</span><span class="token punctuation">,</span> <span class="token string">'col_2'</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">df_left_hr
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>key1</th>
+      <th>key2</th>
+      <th>data_set</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>SF</td>
+      <td>10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>SF</td>
+      <td>20</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>SF</td>
+      <td>30</td>
+      <td>2.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>LA</td>
+      <td>20</td>
+      <td>3.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>LA</td>
+      <td>30</td>
+      <td>4.0</td>
+    </tr>
+  </tbody>
+</table>
+<pre class=" language-python"><code class="prism  language-python">df_right_hr
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th></th>
+      <th>col_1</th>
+      <th>col_2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th rowspan="2" valign="top">LA</th>
+      <th>20</th>
+      <td>0</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>2</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th rowspan="3" valign="top">SF</th>
+      <th>10</th>
+      <td>4</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>6</td>
+      <td>7</td>
+    </tr>
+    <tr>
+      <th>20</th>
+      <td>8</td>
+      <td>9</td>
+    </tr>
+  </tbody>
+</table>
+<p>现在我们穿建了两个Dataframe 分别是df_left_hr和df_right_hr（Index两层），如果我们想通过使用df_left_hr的key1，key2 及df_right_hr的Index作为merge<br>
+的列，也是没有问题的</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># Now we can merge the left by using keys and the right by its index</span>
+pd<span class="token punctuation">.</span>merge<span class="token punctuation">(</span>df_left_hr<span class="token punctuation">,</span>df_right_hr<span class="token punctuation">,</span>left_on<span class="token operator">=</span><span class="token punctuation">[</span><span class="token string">'key1'</span><span class="token punctuation">,</span><span class="token string">'key2'</span><span class="token punctuation">]</span><span class="token punctuation">,</span>right_index<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>key1</th>
+      <th>key2</th>
+      <th>data_set</th>
+      <th>col_1</th>
+      <th>col_2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>SF</td>
+      <td>10</td>
+      <td>0.0</td>
+      <td>4</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <th>0</th>
+      <td>SF</td>
+      <td>10</td>
+      <td>0.0</td>
+      <td>6</td>
+      <td>7</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>SF</td>
+      <td>20</td>
+      <td>1.0</td>
+      <td>8</td>
+      <td>9</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>LA</td>
+      <td>20</td>
+      <td>3.0</td>
+      <td>0</td>
+      <td>1</td>
+    </tr>
+  </tbody>
+</table>
+<p>基本到这里，我已经和大家分享了基础的Merge有关的所有操作，如果你平时生活工作中经常使用Excel执行类似操作的话，可以学习一下Merge哈，它会大幅度<br>
+减轻你的工作强度的！</p>
+<h2 id="join">2.Join</h2>
+<p>现在我们可以接着来看join相关的操作，先让我们看一个小例子</p>
+<pre class=" language-python"><code class="prism  language-python">left <span class="token operator">=</span> pd<span class="token punctuation">.</span>DataFrame<span class="token punctuation">(</span><span class="token punctuation">{</span><span class="token string">'A'</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token string">'A0'</span><span class="token punctuation">,</span> <span class="token string">'A1'</span><span class="token punctuation">,</span> <span class="token string">'A2'</span><span class="token punctuation">,</span> <span class="token string">'A3'</span><span class="token punctuation">]</span><span class="token punctuation">,</span> 
+                    <span class="token string">'B'</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token string">'B0'</span><span class="token punctuation">,</span> <span class="token string">'B1'</span><span class="token punctuation">,</span> <span class="token string">'B2'</span><span class="token punctuation">,</span> <span class="token string">'B3'</span><span class="token punctuation">]</span><span class="token punctuation">}</span><span class="token punctuation">,</span> 
+                    index <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token string">'K0'</span><span class="token punctuation">,</span> <span class="token string">'K1'</span><span class="token punctuation">,</span> <span class="token string">'K2'</span><span class="token punctuation">,</span> <span class="token string">'K3'</span><span class="token punctuation">]</span><span class="token punctuation">)</span> 
+  
+right <span class="token operator">=</span> pd<span class="token punctuation">.</span>DataFrame<span class="token punctuation">(</span><span class="token punctuation">{</span><span class="token string">'C'</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token string">'C0'</span><span class="token punctuation">,</span> <span class="token string">'C1'</span><span class="token punctuation">,</span> <span class="token string">'C2'</span><span class="token punctuation">,</span> <span class="token string">'C3'</span><span class="token punctuation">]</span><span class="token punctuation">,</span> 
+                      <span class="token string">'D'</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token string">'D0'</span><span class="token punctuation">,</span> <span class="token string">'D1'</span><span class="token punctuation">,</span> <span class="token string">'D2'</span><span class="token punctuation">,</span> <span class="token string">'D3'</span><span class="token punctuation">]</span><span class="token punctuation">}</span><span class="token punctuation">,</span> 
+                      index <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token string">'K0'</span><span class="token punctuation">,</span> <span class="token string">'K1'</span><span class="token punctuation">,</span> <span class="token string">'K2'</span><span class="token punctuation">,</span> <span class="token string">'K3'</span><span class="token punctuation">]</span><span class="token punctuation">)</span> 
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">left
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>A</th>
+      <th>B</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>K0</th>
+      <td>A0</td>
+      <td>B0</td>
+    </tr>
+    <tr>
+      <th>K1</th>
+      <td>A1</td>
+      <td>B1</td>
+    </tr>
+    <tr>
+      <th>K2</th>
+      <td>A2</td>
+      <td>B2</td>
+    </tr>
+    <tr>
+      <th>K3</th>
+      <td>A3</td>
+      <td>B3</td>
+    </tr>
+  </tbody>
+</table>
+<pre class=" language-python"><code class="prism  language-python">right
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>C</th>
+      <th>D</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>K0</th>
+      <td>C0</td>
+      <td>D0</td>
+    </tr>
+    <tr>
+      <th>K1</th>
+      <td>C1</td>
+      <td>D1</td>
+    </tr>
+    <tr>
+      <th>K2</th>
+      <td>C2</td>
+      <td>D2</td>
+    </tr>
+    <tr>
+      <th>K3</th>
+      <td>C3</td>
+      <td>D3</td>
+    </tr>
+  </tbody>
+</table>
+<pre class=" language-python"><code class="prism  language-python">left<span class="token punctuation">.</span>join<span class="token punctuation">(</span>right<span class="token punctuation">)</span>
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>A</th>
+      <th>B</th>
+      <th>C</th>
+      <th>D</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>K0</th>
+      <td>A0</td>
+      <td>B0</td>
+      <td>C0</td>
+      <td>D0</td>
+    </tr>
+    <tr>
+      <th>K1</th>
+      <td>A1</td>
+      <td>B1</td>
+      <td>C1</td>
+      <td>D1</td>
+    </tr>
+    <tr>
+      <th>K2</th>
+      <td>A2</td>
+      <td>B2</td>
+      <td>C2</td>
+      <td>D2</td>
+    </tr>
+    <tr>
+      <th>K3</th>
+      <td>A3</td>
+      <td>B3</td>
+      <td>C3</td>
+      <td>D3</td>
+    </tr>
+  </tbody>
+</table>
+<p>其实通过这一个小例子大家也就明白了，join无非就是合并，默认是横向，还有一个点需要注意的是，我们其实可以通过join实现和merge一样的效果，但是为了<br>
+避免混淆，我不会多举其他的例子了，因为我个人认为一般情况下还是用merge函数好一些</p>
+<h2 id="concat">3. Concat</h2>
+<p>为了更加全面彻底地了解Concat函数，大家可以先从一维的Numpy Array开始，首先让我们简单的创建一个矩阵：</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># Create a matrix </span>
+arr1 <span class="token operator">=</span> np<span class="token punctuation">.</span>arange<span class="token punctuation">(</span><span class="token number">9</span><span class="token punctuation">)</span><span class="token punctuation">.</span>reshape<span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+arr1
+</code></pre>
+<pre><code>array([[0, 1, 2],
+       [3, 4, 5],
+       [6, 7, 8]])
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">接着让我们通过concatenate函数进行横向拼接：
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">np<span class="token punctuation">.</span>concatenate<span class="token punctuation">(</span><span class="token punctuation">[</span>arr1<span class="token punctuation">,</span>arr1<span class="token punctuation">]</span><span class="token punctuation">,</span>axis<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">)</span>
+</code></pre>
+<pre><code>array([[0, 1, 2, 0, 1, 2],
+       [3, 4, 5, 3, 4, 5],
+       [6, 7, 8, 6, 7, 8]])
+</code></pre>
+<p>再让我们进行纵向拼接：</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># Let's see other axis options</span>
+np<span class="token punctuation">.</span>concatenate<span class="token punctuation">(</span><span class="token punctuation">[</span>arr1<span class="token punctuation">,</span>arr1<span class="token punctuation">]</span><span class="token punctuation">,</span>axis<span class="token operator">=</span><span class="token number">0</span><span class="token punctuation">)</span>
+</code></pre>
+<pre><code>array([[0, 1, 2],
+       [3, 4, 5],
+       [6, 7, 8],
+       [0, 1, 2],
+       [3, 4, 5],
+       [6, 7, 8]])
+</code></pre>
+<p>有了基础的印象之后，现在让我们看看在pandas中是如何操作的：</p>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># Lets create two Series with no overlap</span>
+ser1 <span class="token operator">=</span>  Series<span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">,</span>index<span class="token operator">=</span><span class="token punctuation">[</span><span class="token string">'T'</span><span class="token punctuation">,</span><span class="token string">'U'</span><span class="token punctuation">,</span><span class="token string">'V'</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+
+ser2 <span class="token operator">=</span> Series<span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token punctuation">,</span>index<span class="token operator">=</span><span class="token punctuation">[</span><span class="token string">'X'</span><span class="token punctuation">,</span><span class="token string">'Y'</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+
+<span class="token comment">#Now let use concat (default is axis=0)</span>
+pd<span class="token punctuation">.</span>concat<span class="token punctuation">(</span><span class="token punctuation">[</span>ser1<span class="token punctuation">,</span>ser2<span class="token punctuation">]</span><span class="token punctuation">)</span>
+</code></pre>
+<pre><code>T    0
+U    1
+V    2
+X    3
+Y    4
+dtype: int64
+</code></pre>
+<p>在上面的例子中，我们分别创建了两个没有重复Index的Series,然后用concat默认的把它们合并在一起，这时生成的依然是Series类型，如果我们把axis换成1，那生成的就是Dataframe,像下面一样</p>
+<pre class=" language-python"><code class="prism  language-python">pd<span class="token punctuation">.</span>concat<span class="token punctuation">(</span><span class="token punctuation">[</span>ser1<span class="token punctuation">,</span>ser2<span class="token punctuation">]</span><span class="token punctuation">,</span>axis<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">,</span>sort <span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>  <span class="token comment"># sort=Ture是默认的，pandas总是默认index排序</span>
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>0</th>
+      <th>1</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>T</th>
+      <td>0.0</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>U</th>
+      <td>1.0</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>V</th>
+      <td>2.0</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>X</th>
+      <td>NaN</td>
+      <td>3.0</td>
+    </tr>
+    <tr>
+      <th>Y</th>
+      <td>NaN</td>
+      <td>4.0</td>
+    </tr>
+  </tbody>
+</table>
+<p>我们还可以指定在哪些index上进行concat:</p>
+<pre class=" language-python"><code class="prism  language-python">pd<span class="token punctuation">.</span>concat<span class="token punctuation">(</span><span class="token punctuation">[</span>ser1<span class="token punctuation">,</span>ser2<span class="token punctuation">]</span><span class="token punctuation">,</span>axis<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">,</span>join_axes<span class="token operator">=</span><span class="token punctuation">[</span><span class="token punctuation">[</span><span class="token string">'U'</span><span class="token punctuation">,</span><span class="token string">'V'</span><span class="token punctuation">,</span><span class="token string">'Y'</span><span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>0</th>
+      <th>1</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>U</th>
+      <td>1.0</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>V</th>
+      <td>2.0</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>Y</th>
+      <td>NaN</td>
+      <td>4.0</td>
+    </tr>
+  </tbody>
+</table>
+<p>也可以给不同组的index加一层标签</p>
+<pre class=" language-python"><code class="prism  language-python">pd<span class="token punctuation">.</span>concat<span class="token punctuation">(</span><span class="token punctuation">[</span>ser1<span class="token punctuation">,</span>ser2<span class="token punctuation">]</span><span class="token punctuation">,</span>keys<span class="token operator">=</span><span class="token punctuation">[</span><span class="token string">'cat1'</span><span class="token punctuation">,</span><span class="token string">'cat2'</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+</code></pre>
+<pre><code>cat1  T    0
+      U    1
+      V    2
+cat2  X    3
+      Y    4
+dtype: int64
+</code></pre>
+<p>如果把axis换成是1，那么keys就会变成column的名字：</p>
+<pre class=" language-python"><code class="prism  language-python">pd<span class="token punctuation">.</span>concat<span class="token punctuation">(</span><span class="token punctuation">[</span>ser1<span class="token punctuation">,</span>ser2<span class="token punctuation">]</span><span class="token punctuation">,</span>axis<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">,</span>keys<span class="token operator">=</span><span class="token punctuation">[</span><span class="token string">'cat1'</span><span class="token punctuation">,</span><span class="token string">'cat2'</span><span class="token punctuation">]</span><span class="token punctuation">,</span>sort<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>cat1</th>
+      <th>cat2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>T</th>
+      <td>0.0</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>U</th>
+      <td>1.0</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>V</th>
+      <td>2.0</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>X</th>
+      <td>NaN</td>
+      <td>3.0</td>
+    </tr>
+    <tr>
+      <th>Y</th>
+      <td>NaN</td>
+      <td>4.0</td>
+    </tr>
+  </tbody>
+</table>
+<p>如果是两个现成的dataframe直接进行concat也是一样：</p>
+<pre class=" language-python"><code class="prism  language-python">dframe1 <span class="token operator">=</span> DataFrame<span class="token punctuation">(</span>np<span class="token punctuation">.</span>random<span class="token punctuation">.</span>randn<span class="token punctuation">(</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">)</span><span class="token punctuation">,</span> columns<span class="token operator">=</span><span class="token punctuation">[</span><span class="token string">'X'</span><span class="token punctuation">,</span> <span class="token string">'Y'</span><span class="token punctuation">,</span> <span class="token string">'Z'</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+dframe2 <span class="token operator">=</span> DataFrame<span class="token punctuation">(</span>np<span class="token punctuation">.</span>random<span class="token punctuation">.</span>randn<span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">)</span><span class="token punctuation">,</span> columns<span class="token operator">=</span><span class="token punctuation">[</span><span class="token string">'Y'</span><span class="token punctuation">,</span> <span class="token string">'Q'</span><span class="token punctuation">,</span> <span class="token string">'X'</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">dframe1
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>X</th>
+      <th>Y</th>
+      <th>Z</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1.119976</td>
+      <td>-0.853960</td>
+      <td>0.027451</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>-0.536831</td>
+      <td>0.982092</td>
+      <td>-0.157650</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>-0.219322</td>
+      <td>-1.489809</td>
+      <td>1.607735</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>0.767249</td>
+      <td>-1.661912</td>
+      <td>0.038837</td>
+    </tr>
+  </tbody>
+</table>
+<pre class=" language-python"><code class="prism  language-python">dframe2
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Y</th>
+      <th>Q</th>
+      <th>X</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>-0.035560</td>
+      <td>0.875282</td>
+      <td>-1.630508</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>-0.439484</td>
+      <td>0.096247</td>
+      <td>1.335693</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>0.746299</td>
+      <td>0.568684</td>
+      <td>1.197015</td>
+    </tr>
+  </tbody>
+</table>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment">#如果没有对应的值，默认为NaN, 空值</span>
+pd<span class="token punctuation">.</span>concat<span class="token punctuation">(</span><span class="token punctuation">[</span>dframe1<span class="token punctuation">,</span>dframe2<span class="token punctuation">]</span><span class="token punctuation">,</span>sort<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>
+</code></pre>
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Q</th>
+      <th>X</th>
+      <th>Y</th>
+      <th>Z</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>NaN</td>
+      <td>1.119976</td>
+      <td>-0.853960</td>
+      <td>0.027451</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>NaN</td>
+      <td>-0.536831</td>
+      <td>0.982092</td>
+      <td>-0.157650</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>NaN</td>
+      <td>-0.219322</td>
+      <td>-1.489809</td>
+      <td>1.607735</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>NaN</td>
+      <td>0.767249</td>
+      <td>-1.661912</td>
+      <td>0.038837</td>
+    </tr>
+    <tr>
+      <th>0</th>
+      <td>0.875282</td>
+      <td>-1.630508</td>
+      <td>-0.035560</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>0.096247</td>
+      <td>1.335693</td>
+      <td>-0.439484</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>0.568684</td>
+      <td>1.197015</td>
+      <td>0.746299</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table>
+<h2 id="源码及github地址">4. 源码及Github地址</h2>
+<p>今天我为大家主要总结了pandas中非常常见的三种方法：</p>
+<ul>
+<li>merge</li>
+<li>concat</li>
+<li>join</li>
+</ul>
+<p>大家可以根据自己的实际需要来决定使用哪一种</p>
+<p>我把这一期的ipynb文件和py文件放到了Github上，大家如果想要下载可以点击下面的链接：</p>
+<ul>
+<li>Github仓库地址： <a href="https://github.com/yaozeliang/pandas_share">https://github.com/yaozeliang/pandas_share</a></li>
+</ul>
+<p>这一期就到这里啦，希望大家能够继续支持我，完结，撒花</p>
+
+    </div>
+  </div>
+</body>
+
+</html>
