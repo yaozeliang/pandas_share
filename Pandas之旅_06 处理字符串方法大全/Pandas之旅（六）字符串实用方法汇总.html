@@ -1,0 +1,302 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pandas之旅（六）字符串实用方法汇总</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__left">
+    <div class="stackedit__toc">
+      
+<ul>
+<li><a href="#有关字符串基本方法">有关字符串基本方法</a>
+<ul>
+<li></li>
+<li><a href="#总结">总结</a></li>
+</ul>
+</li>
+</ul>
+
+    </div>
+  </div>
+  <div class="stackedit__right">
+    <div class="stackedit__html">
+      <h1 id="有关字符串基本方法">有关字符串基本方法</h1>
+<p>大家好，我又回来了！ 之前的几期我们已经简单了解了pandas的基础操作，但是只要涉及到数据，最常见的就是String（字符串）类型，所以很多时候我们其实都在和字符串打交道，所以今天，我会把我自己总结的，有关字符串的常用方法分享给大家，希望能够帮到各位小伙伴~</p>
+<h3 id="split-and-format">Split and format</h3>
+<pre class=" language-python"><code class="prism  language-python">latitude <span class="token operator">=</span> <span class="token string">'37.24N'</span>
+longitude <span class="token operator">=</span> <span class="token string">'-115.81W'</span>
+<span class="token string">'Coordinates {0},{1}'</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span>latitude<span class="token punctuation">,</span>longitude<span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span>   <span class="token string">'Coordinates 37.24N,-115.81W'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">f<span class="token string">'Coordinates {latitude},{longitude}'</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'Coordinates 37.24N,-115.81W'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'{0},{1},{2}'</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span><span class="token operator">*</span><span class="token punctuation">(</span><span class="token string">'abc'</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'a,b,c'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">coord <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token string">"latitude"</span><span class="token punctuation">:</span>latitude<span class="token punctuation">,</span><span class="token string">"longitude"</span><span class="token punctuation">:</span>longitude<span class="token punctuation">}</span>
+<span class="token string">'Coordinates {latitude},{longitude}'</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span><span class="token operator">**</span>coord<span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'Coordinates 37.24N,-115.81W'</span>
+</code></pre>
+<h3 id="access-argument-s-attribute"><strong>Access argument’ s attribute</strong></h3>
+<pre class=" language-python"><code class="prism  language-python"><span class="token keyword">class</span> <span class="token class-name">Point</span><span class="token punctuation">:</span>
+    <span class="token keyword">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span>x<span class="token punctuation">,</span>y<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        self<span class="token punctuation">.</span>x<span class="token punctuation">,</span>self<span class="token punctuation">.</span>y <span class="token operator">=</span> x<span class="token punctuation">,</span>y
+    <span class="token keyword">def</span> <span class="token function">__str__</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">return</span> <span class="token string">'Point({self.x},{self.y})'</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span>self <span class="token operator">=</span> self<span class="token punctuation">)</span>
+    <span class="token keyword">def</span> <span class="token function">__repr__</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword">return</span> f<span class="token string">'Point({self.x},{self.y})'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">test_point <span class="token operator">=</span> Point<span class="token punctuation">(</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">)</span>
+test_point
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span>    Point<span class="token punctuation">(</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">)</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token builtin">str</span><span class="token punctuation">(</span>Point<span class="token punctuation">(</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'Point(4,2)'</span>
+</code></pre>
+<h3 id="replace-with-s--r-"><strong>Replace with %s , %r</strong> :</h3>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">" repr() shows the quote {!r}, while str() doesn't:{!s} "</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span><span class="token string">'a1'</span><span class="token punctuation">,</span><span class="token string">'a2'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span> <span class="token string">" repr() shows the quote 'a1', while str() doesn't:a2 "</span>
+
+</code></pre>
+<h3 id="align-"><strong>Align</strong> :</h3>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'{:&lt;30}'</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span><span class="token string">'left aligned'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'left aligned                  '</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'{:&gt;30}'</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span><span class="token string">'right aligned'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'                 right aligned'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'{:^30}'</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span><span class="token string">'centerd'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'           centerd            '</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'{:*^30}'</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span><span class="token string">'centerd'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'***********centerd************'</span>
+</code></pre>
+<h3 id="replace-with-x--o-"><strong>Replace with %x , %o</strong> :</h3>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">"int:{0:d}, hex:{0:x}, oct:{0:o}, bin:{0:b}"</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span><span class="token number">42</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'int:42, hex:2a, oct:52, bin:101010'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'{:,}'</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span><span class="token number">12345677</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'12,345,677'</span>
+</code></pre>
+<h3 id="percentage-"><strong>Percentage</strong> :</h3>
+<pre class=" language-python"><code class="prism  language-python">points <span class="token operator">=</span> <span class="token number">19</span>
+total <span class="token operator">=</span> <span class="token number">22</span>
+<span class="token string">'Correct answers: {:.2%}'</span><span class="token punctuation">.</span><span class="token builtin">format</span><span class="token punctuation">(</span>points<span class="token operator">/</span>total<span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'Correct answers: 86.36%'</span>
+</code></pre>
+<h3 id="date-"><strong>Date</strong> :</h3>
+<pre class=" language-python"><code class="prism  language-python"><span class="token keyword">import</span> datetime <span class="token keyword">as</span> dt
+f<span class="token string">"{dt.datetime.now():%Y-%m-%d}"</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'2019-03-27'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">f<span class="token string">"{dt.datetime.now():%d_%m_%Y}"</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'27_03_2019'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">today <span class="token operator">=</span> dt<span class="token punctuation">.</span>datetime<span class="token punctuation">.</span>today<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>strftime<span class="token punctuation">(</span><span class="token string">"%d_%m_%Y"</span><span class="token punctuation">)</span>
+today
+</code></pre>
+<pre><code>'27_03_2019'
+</code></pre>
+<h3 id="split-without-parameters-"><strong>Split without parameters</strong> :</h3>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">"this is a  test"</span><span class="token punctuation">.</span>split<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token punctuation">[</span><span class="token string">'this'</span><span class="token punctuation">,</span> <span class="token string">'is'</span><span class="token punctuation">,</span> <span class="token string">'a'</span><span class="token punctuation">,</span> <span class="token string">'test'</span><span class="token punctuation">]</span>
+</code></pre>
+<h3 id="concatenate-"><strong>Concatenate</strong> :</h3>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'do'</span><span class="token operator">*</span><span class="token number">2</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'dodo'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">orig_string <span class="token operator">=</span><span class="token string">'Hello'</span>
+orig_string<span class="token operator">+</span><span class="token string">',World'</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'Hello,World'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">full_sentence <span class="token operator">=</span> orig_string<span class="token operator">+</span><span class="token string">',World'</span>
+full_sentence
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'Hello,World'</span>
+</code></pre>
+<h3 id="check-string-type--slice，count，strip-"><strong>Check string type , slice，count，strip</strong> :</h3>
+<pre class=" language-python"><code class="prism  language-python">strings <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token string">'do'</span><span class="token punctuation">,</span><span class="token string">'re'</span><span class="token punctuation">,</span><span class="token string">'mi'</span><span class="token punctuation">]</span>
+<span class="token string">', '</span><span class="token punctuation">.</span>join<span class="token punctuation">(</span>strings<span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'do, re, mi'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'z'</span> <span class="token operator">not</span> <span class="token keyword">in</span> <span class="token string">'abc'</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span> <span class="token boolean">True</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token builtin">ord</span><span class="token punctuation">(</span><span class="token string">'a'</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token builtin">ord</span><span class="token punctuation">(</span><span class="token string">'#'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span> <span class="token punctuation">(</span><span class="token number">97</span><span class="token punctuation">,</span> <span class="token number">35</span><span class="token punctuation">)</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token builtin">chr</span><span class="token punctuation">(</span><span class="token number">97</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'a'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">s <span class="token operator">=</span> <span class="token string">"foodbar"</span>
+s<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">:</span><span class="token number">5</span><span class="token punctuation">]</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'odb'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">s<span class="token punctuation">[</span><span class="token punctuation">:</span><span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">+</span> s<span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">:</span><span class="token punctuation">]</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'foodbar'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">s<span class="token punctuation">[</span><span class="token punctuation">:</span><span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">+</span> s<span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">:</span><span class="token punctuation">]</span> <span class="token operator">==</span> s
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token boolean">True</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">t<span class="token operator">=</span>s<span class="token punctuation">[</span><span class="token punctuation">:</span><span class="token punctuation">]</span>
+<span class="token builtin">id</span><span class="token punctuation">(</span>s<span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token number">1547542895336</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token builtin">id</span><span class="token punctuation">(</span>t<span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token number">1547542895336</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">s <span class="token keyword">is</span> t
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token boolean">True</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">s<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">:</span><span class="token number">6</span><span class="token punctuation">:</span><span class="token number">2</span><span class="token punctuation">]</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'fob'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">s<span class="token punctuation">[</span><span class="token number">5</span><span class="token punctuation">:</span><span class="token number">0</span><span class="token punctuation">:</span><span class="token operator">-</span><span class="token number">2</span><span class="token punctuation">]</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'ado'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">s <span class="token operator">=</span> <span class="token string">'tomorrow is monday'</span>
+reverse_s <span class="token operator">=</span> s<span class="token punctuation">[</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">]</span>
+reverse_s
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'yadnom si worromot'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">s<span class="token punctuation">.</span>capitalize<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'Tomorrow is monday'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">s<span class="token punctuation">.</span>upper<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'TOMORROW IS MONDAY'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">s<span class="token punctuation">.</span>title<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'Tomorrow Is Monday'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python">s<span class="token punctuation">.</span>count<span class="token punctuation">(</span><span class="token string">'o'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span> <span class="token number">4</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">"foobar"</span><span class="token punctuation">.</span>startswith<span class="token punctuation">(</span><span class="token string">'foo'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token boolean">True</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">"foobar"</span><span class="token punctuation">.</span>endswith<span class="token punctuation">(</span><span class="token string">'ar'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token boolean">True</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">"foobar"</span><span class="token punctuation">.</span>endswith<span class="token punctuation">(</span><span class="token string">'oob'</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token boolean">True</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">"foobar"</span><span class="token punctuation">.</span>endswith<span class="token punctuation">(</span><span class="token string">'oob'</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token boolean">False</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">"My name is yo, I work at SG"</span><span class="token punctuation">.</span>find<span class="token punctuation">(</span><span class="token string">'yo'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token number">11</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># If can't find the string, return -1</span>
+<span class="token string">"My name is ya, I work at Gener"</span><span class="token punctuation">.</span>find<span class="token punctuation">(</span><span class="token string">'gent'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token operator">-</span><span class="token number">1</span>
+
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># Check a string if consists of alphanumeric characters</span>
+<span class="token string">"abc123"</span><span class="token punctuation">.</span>isalnum<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token boolean">True</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">"abc%123"</span><span class="token punctuation">.</span>isalnum<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token boolean">False</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">"abcABC"</span><span class="token punctuation">.</span>isalpha<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token boolean">True</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">"abcABC1"</span><span class="token punctuation">.</span>isalpha<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token boolean">False</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'123'</span><span class="token punctuation">.</span>isdigit<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token boolean">True</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'123abc'</span><span class="token punctuation">.</span>isdigit<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token boolean">False</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'abc'</span><span class="token punctuation">.</span>islower<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token boolean">True</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">"This Is A Title"</span><span class="token punctuation">.</span>istitle<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token boolean">True</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">"This is a title"</span><span class="token punctuation">.</span>istitle<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token boolean">False</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'ABC'</span><span class="token punctuation">.</span>isupper<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token boolean">True</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'ABC1%'</span><span class="token punctuation">.</span>isupper<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token boolean">True</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'foo'</span><span class="token punctuation">.</span>center<span class="token punctuation">(</span><span class="token number">10</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'   foo    '</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'   foo bar baz    '</span><span class="token punctuation">.</span>strip<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'foo bar baz'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'   foo bar baz    '</span><span class="token punctuation">.</span>lstrip<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'foo bar baz    '</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'   foo bar baz    '</span><span class="token punctuation">.</span>rstrip<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'   foo bar baz'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">"foo abc foo def fo  ljk "</span><span class="token punctuation">.</span>replace<span class="token punctuation">(</span><span class="token string">'foo'</span><span class="token punctuation">,</span><span class="token string">'yao'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'yao abc yao def fo  ljk '</span>
+
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'www.realpython.com'</span><span class="token punctuation">.</span>strip<span class="token punctuation">(</span><span class="token string">'w.moc'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'realpython'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'www.realpython.com'</span><span class="token punctuation">.</span>strip<span class="token punctuation">(</span><span class="token string">'w.com'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'realpython'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'www.realpython.com'</span><span class="token punctuation">.</span>strip<span class="token punctuation">(</span><span class="token string">'w.ncom'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'realpyth'</span>
+</code></pre>
+<h3 id="convert-to-lists-"><strong>Convert to lists</strong> :</h3>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">', '</span><span class="token punctuation">.</span>join<span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token string">'foo'</span><span class="token punctuation">,</span><span class="token string">'bar'</span><span class="token punctuation">,</span><span class="token string">'baz'</span><span class="token punctuation">,</span><span class="token string">'qux'</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'foo, bar, baz, qux'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token builtin">list</span><span class="token punctuation">(</span><span class="token string">'corge'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token punctuation">[</span><span class="token string">'c'</span><span class="token punctuation">,</span> <span class="token string">'o'</span><span class="token punctuation">,</span> <span class="token string">'r'</span><span class="token punctuation">,</span> <span class="token string">'g'</span><span class="token punctuation">,</span> <span class="token string">'e'</span><span class="token punctuation">]</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">':'</span><span class="token punctuation">.</span>join<span class="token punctuation">(</span><span class="token string">'corge'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token string">'c:o:r:g:e'</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'www.foo'</span><span class="token punctuation">.</span>partition<span class="token punctuation">(</span><span class="token string">'.'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token string">'www'</span><span class="token punctuation">,</span> <span class="token string">'.'</span><span class="token punctuation">,</span> <span class="token string">'foo'</span><span class="token punctuation">)</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'foo@@bar@@baz'</span><span class="token punctuation">.</span>partition<span class="token punctuation">(</span><span class="token string">'@@'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token string">'foo'</span><span class="token punctuation">,</span> <span class="token string">'@@'</span><span class="token punctuation">,</span> <span class="token string">'bar@@baz'</span><span class="token punctuation">)</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'foo@@bar@@baz'</span><span class="token punctuation">.</span>rpartition<span class="token punctuation">(</span><span class="token string">'@@'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token string">'foo@@bar'</span><span class="token punctuation">,</span> <span class="token string">'@@'</span><span class="token punctuation">,</span> <span class="token string">'baz'</span><span class="token punctuation">)</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'foo.bar'</span><span class="token punctuation">.</span>partition<span class="token punctuation">(</span><span class="token string">'@@'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token string">'foo.bar'</span><span class="token punctuation">,</span> <span class="token string">''</span><span class="token punctuation">,</span> <span class="token string">''</span><span class="token punctuation">)</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token comment"># By default , rsplit split a string with white space</span>
+<span class="token string">'foo bar adf yao'</span><span class="token punctuation">.</span>rsplit<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token punctuation">[</span><span class="token string">'foo'</span><span class="token punctuation">,</span> <span class="token string">'bar'</span><span class="token punctuation">,</span> <span class="token string">'adf'</span><span class="token punctuation">,</span> <span class="token string">'yao'</span><span class="token punctuation">]</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'foo.bar.adf.ert'</span><span class="token punctuation">.</span>split<span class="token punctuation">(</span><span class="token string">'.'</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token punctuation">[</span><span class="token string">'foo'</span><span class="token punctuation">,</span> <span class="token string">'bar'</span><span class="token punctuation">,</span> <span class="token string">'adf'</span><span class="token punctuation">,</span> <span class="token string">'ert'</span><span class="token punctuation">]</span>
+</code></pre>
+<pre class=" language-python"><code class="prism  language-python"><span class="token string">'foo\nbar\nadfa\nlko'</span><span class="token punctuation">.</span>splitlines<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span><span class="token punctuation">[</span><span class="token string">'foo'</span><span class="token punctuation">,</span> <span class="token string">'bar'</span><span class="token punctuation">,</span> <span class="token string">'adfa'</span><span class="token punctuation">,</span> <span class="token string">'lko'</span><span class="token punctuation">]</span>
+</code></pre>
+<h2 id="总结">总结</h2>
+<p>除了我以上总结的这些，还有太多非常实用的方法，大家可以根据自己的需求去搜索啦！</p>
+<p>我把这一期的ipynb文件和py文件放到了Github上，大家如果想要下载可以点击下面的链接：</p>
+<ul>
+<li>Github仓库地址： <a href="https://github.com/yaozeliang/pandas_share/tree/master/Pandas%E4%B9%8B%E6%97%85_04%20pandas%E8%B6%85%E5%AE%9E%E7%94%A8%E6%8A%80%E5%B7%A7">https://github.com/yaozeliang/pandas_share</a></li>
+</ul>
+<p>希望大家能够继续支持我，完结，撒花</p>
+
+    </div>
+  </div>
+</body>
+
+</html>
